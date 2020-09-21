@@ -1,4 +1,4 @@
-name: four-phase-inversion
+name: pji
 channels:
     - conda-forge
     - defaults
