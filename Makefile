@@ -5,4 +5,4 @@
 
 all:
 	make -C code all
-	make -C manuscript all
+#	make -C manuscript all

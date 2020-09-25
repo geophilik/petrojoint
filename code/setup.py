@@ -3,13 +3,13 @@ Build and install the package.
 """
 from setuptools import find_packages, setup
 
-NAME = 'fpinv'
+NAME = 'pji'
 FULLNAME = NAME
-AUTHOR = "Florian Wagner, Coline Mollaret, Thomas Günther, Andreas Kemna, and Christian Hauck"
-AUTHOR_EMAIL = 'mail@fwagner.info'
+AUTHOR = "Matthias Steiner"
+AUTHOR_EMAIL = 'matthias.steiner.@geo.tuwien.ac.at'
 LICENSE = "BSD License"
-URL = "https://github.com/florian-wagner/four-phase-inversion"
-DESCRIPTION = "Joint inversion of seismic refraction and electrical resistivity data to estimate water, ice, and air contents."
+URL = ""
+DESCRIPTION = ""
 LONG_DESCRIPTION = DESCRIPTION
 
 VERSION = '1.0'

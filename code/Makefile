@@ -5,7 +5,7 @@
 ###############################################################################
 
 # Set the package name
-PACKAGE = fpinv
+PACKAGE = pji
 
 # TARGETS
 ###############################################################################
@@ -29,6 +29,6 @@ build:
 	unset PYTHONPATH # to avoid conflicts with local pygimli installations
 	python setup.py install
 
-results:
-	make -C scripts/field_case all
-	make -C scripts/synthetic_case all
+#results:
+#	make -C scripts/field_case all
+#	make -C scripts/synthetic_case all
