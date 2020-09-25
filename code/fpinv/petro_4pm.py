@@ -4,13 +4,12 @@ import numpy as np
 import pygimli as pg
 
 
-class PetMod():
+class FourPhaseModel():
 
-    def __init__(self, vw=1500., va=330., vr=5500, a=1., n=2., m=1.3,
+    def __init__(self, vw=1500., va=330., vi=3500., vr=5500, a=1., n=2., m=1.3,
                  phi=0.4, rhow=150.):
-        """Petrophysical model based on the four phase model (4PM) after 
-        Hauck et al. (2011). Estimates fraction
-        of air and water from electrical bulk resistivity and seismic
+        """Four phase model (4PM) after Hauck et al. (2011). Estimates fraction
+        of ice, air and water from electrical bulk resistivity and seismic
         velocity.
 
         Parameters
@@ -19,6 +18,8 @@ class PetMod():
             Velocity of water in m/s (the default is 1500.).
         va : float or array type
             Velocity of air in m/s (the default is 330.).
+        vi : float or array type
+            Velocity of ice in m/s (the default is 3500.).
         vr : float or array type
             Velocity of rock in m/s (the default is 5000).
         a : float or array type
@@ -36,6 +37,7 @@ class PetMod():
         # Velocities of water, air, ice and rock (m/s)
         self.vw = vw
         self.va = va
+        self.vi = vi
         self.vr = vr
 
         # Archie parameter
@@ -52,6 +54,13 @@ class PetMod():
         fw[np.isclose(fw, 0)] = 0
         return fw
 
+    def ice(self, rho, v):
+        fi = (self.vi * self.va / (self.va - self.vi) * (
+            1. / v - self.fr / self.vr - self.phi / self.va - self.water(rho) *
+            (1. / self.vw - 1. / self.va)))
+        fi[np.isclose(fi, 0)] = 0
+        return fi
+
     def air(self, rho, v):
         fa = ((self.vi * self.va / (self.vi - self.va) * (
             1. / v - self.fr / self.vr - self.phi / self.vi - self.water(rho) *
@@ -59,10 +68,10 @@ class PetMod():
         fa[np.isclose(fa, 0)] = 0
         return fa
 
-    def rho(self, fw, fa, fr=None):
+    def rho(self, fw, fi, fa, fr=None):
         """Return electrical resistivity based on fraction of water `fw`."""
         if fr is None:
-            phi = fw + fa
+            phi = fw + fi + fa
         else:
             phi = 1 - fr
 
@@ -73,21 +82,24 @@ class PetMod():
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
 
-    def rho_deriv_fw(self, fw, fa, fr):
+    def rho_deriv_fw(self, fw, fi, fa, fr):
         return self.rho(fw, fi, fa, fr) * -self.n / fw
 
-    def rho_deriv_fr(self, fw, fa, fr):
+    def rho_deriv_fr(self, fw, fi, fa, fr):
         return self.rho(fw, fi, fa, fr) * (self.n - self.m) / (fr - 1)
 
-    def rho_deriv_fa(self, fw, fa, fr):
+    def rho_deriv_fi(self, fw, fi, fa, fr):
         return 0
 
-    def slowness(self, fw, fa, fr=None):
+    def rho_deriv_fa(self, fw, fi, fa, fr):
+        return 0
+
+    def slowness(self, fw, fi, fa, fr=None):
         """Return slowness based on fraction of water `fw` and ice `fi`."""
         if fr is None:
-            fr = 1 - (fw + fa)
+            fr = 1 - (fw + fi + fa)
 
-        s = fw / self.vw + fr / self.vr + fa / self.va
+        s = fw / self.vw + fr / self.vr + fi / self.vi + fa / self.va
         if (s <= 0).any():
             pg.warn("Found negative slowness, setting to nearest above zero.")
             s[s <= 0] = np.min(s[s > 0])
@@ -102,10 +114,12 @@ class PetMod():
         v = np.array(v)
 
         fa = self.air(rho, v)
+        fi = self.ice(rho, v)
         fw = self.water(rho)
 
         # Check that fractions are between 0 and 1
         array_mask = np.array(((fa < 0) | (fa > 1 - self.fr))
+                              | ((fi < 0) | (fi > 1 - self.fr))
                               | ((fw < 0) | (fw > 1 - self.fr))
                               | ((self.fr < 0) | (self.fr > 1)))
         if array_mask.sum() > 1:
@@ -114,9 +128,10 @@ class PetMod():
 
         if mask:
             fa = np.ma.array(fa, mask=(fa < 0) | (fa > 1 - self.fr))
+            fi = np.ma.array(fi, mask=(fi < 0) | (fi > 1 - self.fr))
             fw = np.ma.array(fw, mask=(fw < 0) | (fw > 1 - self.fr))
 
-        return fa, fw, array_mask
+        return fa, fi, fw, array_mask
 
     def show(self, mesh, rho, vel, mask=True, **kwargs):
         fa, fi, fw, mask = self.all(rho, vel, mask=mask)
