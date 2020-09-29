@@ -8,8 +8,7 @@ class PetMod():
 
     def __init__(self, vw=1500., va=330., vr=5500, a=1., n=2., m=1.3,
                  phi=0.4, rhow=150.):
-        """Petrophysical model based on the four phase model (4PM) after 
-        Hauck et al. (2011). Estimates fraction
+        """Petrophysical model. Estimates fraction
         of air and water from electrical bulk resistivity and seismic
         velocity.
 
