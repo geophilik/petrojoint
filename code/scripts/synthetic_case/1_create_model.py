@@ -2,7 +2,7 @@ import numpy as np
 
 import pygimli as pg
 import pygimli.meshtools as mt
-from fpinv import FourPhaseModel
+from pji import PetMod
 
 # create and save sensors
 snum = 72; sspc = 3; sstartx = 20
@@ -53,11 +53,12 @@ print(falayers)
 # ~ Fsyn = np.vstack((fwlayers, filayers, falayers, frlayers))
 # ~ np.savetxt("syn_model.dat", Fsyn)
 
-pm = PetMod(phi=philayers)
+pm = PetMod(phi=philayers, vw=1500., va=330., vr=4000, a=1.2, n=1.5, m=2,
+            rhow=150.)
 
 print(falayers + fwlayers + frlayers)
-rholayers = fpm.rho(fwlayers, falayers, frlayers)
-vellayers = 1. / fpm.slowness(fwlayers, falayers, frlayers)
+rholayers = pm.rho(fwlayers, falayers, frlayers)
+vellayers = 1. / pm.slowness(fwlayers, falayers, frlayers)
 
 print(rholayers)
 print(vellayers)
@@ -80,9 +81,9 @@ pm.fr = fr
 pm.phi = 1 - fr
 # fpm.show(mesh, rhotrue, veltrue)
 
-assert np.allclose(fa + fi + fw + fr, 1)
+assert np.allclose(fa + fw + fr, 1)
 
-np.savez("true_model.npz", rho=rhotrue, vel=veltrue, fa=fa, fi=fi, fw=fw,
+np.savez("true_model.npz", rho=rhotrue, vel=veltrue, fa=fa, fw=fw,
          fr=fr)
 
 mesh.save("mesh.bms")
