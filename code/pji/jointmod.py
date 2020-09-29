@@ -8,7 +8,7 @@ import pygimli as pg
 class JointMod(pg.ModellingBase):
     def __init__(self, mesh, ertfop, rstfop, petromodel, fix_poro=True,
                  zWeight=1, verbose=True, corr_l=None, fix_water=False,
-                 fix_ice=False, fix_air=False):
+                 fix_air=False):
         """Joint petrophysical modeling operator.
 
         Parameters
@@ -23,7 +23,7 @@ class JointMod(pg.ModellingBase):
             Horizontal and vertical correlation lengths. If provided,
             geostatistical regularization will be used and classical smoothing
             with zWeight will be ignored.
-        fix_poro|water|ice|air : boolean or vector
+        fix_poro|water|air : boolean or vector
             Fix to starting model or provide weight vector for particular cells.
         """
         pg.ModellingBase.__init__(self, verbose)
@@ -34,7 +34,6 @@ class JointMod(pg.ModellingBase):
         self.fpm = petromodel
         self.cellCount = self.mesh.cellCount()
         self.fix_water = fix_water
-        self.fix_ice = fix_ice
         self.fix_air = fix_air
         self.fix_poro = fix_poro
         self.zWeight = zWeight
@@ -47,10 +46,10 @@ class JointMod(pg.ModellingBase):
         return np.reshape(model, (4, self.cellCount))
 
     def createJacobian(self, model):
-        fw, fi, fa, fr = self.fractions(model)
+        fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fi, fa, fr)
-        s = self.fpm.slowness(fw, fi, fa, fr)
+        rho = self.fpm.rho(fw, fa, fr)
+        s = self.fpm.slowness(fw, fa, fr)
 
         self.ERT.fop.createJacobian(rho)
         self.RST.fop.createJacobian(s)
@@ -60,29 +59,24 @@ class JointMod(pg.ModellingBase):
 
         # Setting inner derivatives
         self.jacRSTW = pg.MultRightMatrix(jacRST, r=1. / self.fpm.vw)
-        self.jacRSTI = pg.MultRightMatrix(jacRST, r=1. / self.fpm.vi)
         self.jacRSTA = pg.MultRightMatrix(jacRST, r=1. / self.fpm.va)
         self.jacRSTR = pg.MultRightMatrix(jacRST, r=1. / self.fpm.vr)
 
         self.jacERTW = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fw(fw, fi, fa, fr))
-        self.jacERTI = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fi(fw, fi, fa, fr))
+            jacERT, r=self.fpm.rho_deriv_fw(fw, fa, fr))
         self.jacERTA = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fa(fw, fi, fa, fr))
+            jacERT, r=self.fpm.rho_deriv_fa(fw, fa, fr))
         self.jacERTR = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fr(fw, fi, fa, fr))
+            jacERT, r=self.fpm.rho_deriv_fr(fw, fa, fr))
 
         # Putting subjacobians together in block matrix
         self.jac = pg.BlockMatrix()
         nData = 0
         self.jac.addMatrix(self.jacRSTW, nData, 0)
-        self.jac.addMatrix(self.jacRSTI, nData, self.cellCount)
         self.jac.addMatrix(self.jacRSTA, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacRSTR, nData, self.cellCount * 3)
         nData += self.RST.fop.data().size()  # update total vector length
         self.jac.addMatrix(self.jacERTW, nData, 0)
-        self.jac.addMatrix(self.jacERTI, nData, self.cellCount)
         self.jac.addMatrix(self.jacERTA, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacERTR, nData, self.cellCount * 3)
         self.setJacobian(self.jac)
@@ -129,8 +123,8 @@ class JointMod(pg.ModellingBase):
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
-        phases = ["water", "ice", "air", "rock matrix"]
-        for i, phase in enumerate([self.fix_water, self.fix_ice, self.fix_air,
+        phases = ["water", "air", "rock matrix"]
+        for i, phase in enumerate([self.fix_water, self.fix_air,
                                    self.fix_poro]):
             name = phases[i]
             vec = pg.RVector(self.cellCount)
@@ -146,16 +140,14 @@ class JointMod(pg.ModellingBase):
                               self._G.rows(), self.cellCount * i)
 
     def showModel(self, model):
-        fw, fi, fa, fr = self.fractions(model)
+        fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fi, fa, fr)
-        s = self.fpm.slowness(fw, fi, fa, fr)
+        rho = self.fpm.rho(fw, fa, fr)
+        s = self.fpm.slowness(fw, fa, fr)
 
         _, axs = plt.subplots(3, 2)
         pg.show(self.mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
                 logScale=False, cMap="Blues")
-        pg.show(self.mesh, fi, ax=axs[1, 0], label="Ice content", hold=True,
-                logScale=False, cMap="Purples")
         pg.show(self.mesh, fa, ax=axs[2, 0], label="Air content", hold=True,
                 logScale=False, cMap="Greens")
         pg.show(self.mesh, fr, ax=axs[2, 1], label="Rock matrix content",
@@ -209,16 +201,15 @@ class JointMod(pg.ModellingBase):
 
     def response_mt(self, model, i=0):
         model = np.nan_to_num(model)
-        fw, fi, fa, fr = self.fractions(model)
+        fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fi, fa, fr)
-        s = self.fpm.slowness(fw, fi, fa, fr)
+        rho = self.fpm.rho(fw, fa, fr)
+        s = self.fpm.slowness(fw, fa, fr)
 
         print("=" * 30)
         print("        Min. | Max.")
         print("-" * 30)
         print(" Water: %.2f | %.2f" % (np.min(fw), np.max(fw)))
-        print(" Ice:   %.2f | %.2f" % (np.min(fi), np.max(fi)))
         print(" Air:   %.2f | %.2f" % (np.min(fa), np.max(fa)))
         print(" Rock:  %.2f | %.2f" % (np.min(fr), np.max(fr)))
         print("-" * 30)

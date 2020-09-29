@@ -58,6 +58,11 @@ class PetMod():
             (1. / self.vw - 1. / self.vi))))
         fa[np.isclose(fa, 0)] = 0
         return fa
+        
+    def air(self, rho, v):
+        fa = self.va * (1. / v - self.fr / self.vr - self.water(rhho) / self.vw)
+        fa[np.isclose(fa, 0)] = 0
+        return fa
 
     def rho(self, fw, fa, fr=None):
         """Return electrical resistivity based on fraction of water `fw`."""
@@ -119,13 +124,11 @@ class PetMod():
         return fa, fw, array_mask
 
     def show(self, mesh, rho, vel, mask=True, **kwargs):
-        fa, fi, fw, mask = self.all(rho, vel, mask=mask)
+        fa, fw, mask = self.all(rho, vel, mask=mask)
 
         fig, axs = plt.subplots(3, 2, figsize=(16, 10))
         pg.show(mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
                 logScale=False, cMap="Blues", **kwargs)
-        pg.show(mesh, fi, ax=axs[1, 0], label="Ice content", hold=True,
-                logScale=False, cMap="Purples", **kwargs)
         pg.show(mesh, fa, ax=axs[2, 0], label="Air content", hold=True,
                 logScale=False, cMap="Greens", **kwargs)
         pg.show(mesh, rho, ax=axs[0, 1], label="Rho", hold=True,
@@ -139,22 +142,22 @@ class PetMod():
         return fig, axs
 
 
-def testFourPhaseModel():
+def testPetMod():
     # Parameters from Hauck et al. (2011)
-    fpm = FourPhaseModel(vw=1500, vi=3500, va=300, vr=6000, phi=0.5, n=2.,
-                         m=2., a=1., rhow=200.)
+    fpm = PetMod(vw=1500, va=300, vr=6000, phi=0.5, n=2.,
+                 m=2., a=1., rhow=200.)
 
     assert fpm.water(10.0) == 10.0
     v = np.linspace(500, 6000, 1000)
     rho = np.logspace(2, 7, 1000)
     x, y = np.meshgrid(v, rho)
 
-    fa, fi, fw, mask = fpm.all(y, x, mask=True)
+    fa, fw, mask = fpm.all(y, x, mask=True)
 
     cmap = plt.cm.get_cmap('Spectral_r', 41)
-    fig, axs = plt.subplots(3, figsize=(6, 4.5), sharex=True)
-    labels = ["Air content", "Ice content", "Water content"]
-    for data, ax, label in zip([fa, fi, fw], axs, labels):
+    fig, axs = plt.subplots(2, figsize=(6, 4.5), sharex=True)
+    labels = ["Air content", "Water content"]
+    for data, ax, label in zip([fa, fw], axs, labels):
         im = ax.imshow(
             data[::-1], cmap=cmap, extent=[
                 v.min(),
@@ -170,7 +173,7 @@ def testFourPhaseModel():
     fig.tight_layout()
 
     plt.figure()
-    im = plt.imshow(fa + fi + fw, vmin=0, vmax=0.5)
+    im = plt.imshow(fa + fw, vmin=0, vmax=0.5)
     plt.colorbar(im)
 
     return fig

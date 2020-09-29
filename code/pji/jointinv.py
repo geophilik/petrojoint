@@ -5,7 +5,7 @@ from .lsqrinversion import LSQRInversion
 
 class JointInv(LSQRInversion):
     def __init__(self, fop, data, error, startmodel, lam=20, beta=10000,
-                 maxIter=50, fwmin=0, fwmax=1, fimin=0, fimax=1, famin=0,
+                 maxIter=50, fwmin=0, fwmax=1, famin=0,
                  famax=1, frmin=0, frmax=1):
         LSQRInversion.__init__(self, data, fop, verbose=True, dosave=True)
         self._error = pg.RVector(error)
@@ -24,7 +24,7 @@ class JointInv(LSQRInversion):
         n = self.forwardOperator().cellCount
         self.mcumtrans = pg.TransCumulative()
         self.transforms = []
-        phase_limits = [[fwmin, fwmax], [fimin, fimax],
+        phase_limits = [[fwmin, fwmax],
                         [famin, famax], [frmin, frmax]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:

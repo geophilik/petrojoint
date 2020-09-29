@@ -4,41 +4,60 @@ import pygimli as pg
 import pygimli.meshtools as mt
 from fpinv import FourPhaseModel
 
+# create and save sensors
+snum = 72; sspc = 3; sstartx = 20
+sensors = np.arange(sstartx, sstartx + snum * sspc, sspc, dtype="float")
+print(sensors)
+print("Sensors", len(sensors))
+sensors.dump("sensors.npy")
+
 # Model creation
-world = mt.createWorld([0, -30], [150, 0], layers=[-5, -15], worldMarker=False)
-block = mt.createPolygon([[60, -5], [90, -5], [100, -15], [50, -15]],
+world = mt.createWorld([0, -40], [253, 0], layers=[-1 , -25], worldMarker=False)
+
+# landfill body
+lfb = mt.createPolygon([[35, -1], [218, -1], [203, -18], [50, -18]],
                          isClosed=True)
-geom = mt.mergePLC([world, block])
-geom.addRegionMarker((80, -2.5), 0)
-geom.addRegionMarker((20, -10), 1)
-geom.addRegionMarker((80, -10), 2)
-geom.addRegionMarker((120, -10), 3)
-geom.addRegionMarker((80, -25), 4)
+                         
+# preferential flow path
+pfp = mt.createPolygon([[90, -1], [95, -1], [85, -18], [70, -18]],
+                         isClosed=True)
+                         
+geom = mt.mergePLC([world, lfb, pfp])
+geom.addRegionMarker((10, -.5), 0)
+geom.addRegionMarker((10, -10), 1)
+geom.addRegionMarker((10, -30), 2)
+geom.addRegionMarker((50, -10), 3)
+geom.addRegionMarker((150, -10), 3)
+geom.addRegionMarker((75, -15), 4)
 geom.save("geom.bms")
 
-mesh = mt.createMesh(geom, area=1.0)
+# ~ ax, _ = pg.show(geom, markers=True)
+# ~ ax.plot(sensors, np.zeros_like(sensors), 'ko')
 
-# pg.show(mesh, markers=True)
+# ~ pg.plt.show()
+
+mesh = mt.createMesh(geom, area=1.0); pg.plt.show()
+
+pg.show(mesh, markers=True)
 
 # Model creation based on pore fractions
-philayers = np.array([0.4, 0.3, 0.3, 0.3, 0.2])
+philayers = np.array([0.4, 0.25, 0.1, 0.45, 0.75])
 frlayers = 1 - philayers
-fwlayers = np.array([0.3, 0.18, 0.02, 0.1, 0.02])
-filayers = np.array([0.0, 0.1, 0.28, 0.18, 0.18])
-falayers = philayers - fwlayers - filayers
+fwlayers = np.array([0.4, 0.25, 0.03, 0.2, 0.3])
+falayers = philayers - fwlayers
 
 falayers[np.isclose(falayers, 0.0)] = 0.0
 print(falayers)
 
-# Save for covariance calculations
-Fsyn = np.vstack((fwlayers, filayers, falayers, frlayers))
-np.savetxt("syn_model.dat", Fsyn)
+# ~ # Save for covariance calculations
+# ~ Fsyn = np.vstack((fwlayers, filayers, falayers, frlayers))
+# ~ np.savetxt("syn_model.dat", Fsyn)
 
-fpm = FourPhaseModel(phi=philayers)
+pm = PetMod(phi=philayers)
 
-print(falayers + filayers + fwlayers + frlayers)
-rholayers = fpm.rho(fwlayers, filayers, falayers, frlayers)
-vellayers = 1. / fpm.slowness(fwlayers, filayers, falayers, frlayers)
+print(falayers + fwlayers + frlayers)
+rholayers = fpm.rho(fwlayers, falayers, frlayers)
+vellayers = 1. / fpm.slowness(fwlayers, falayers, frlayers)
 
 print(rholayers)
 print(vellayers)
@@ -52,25 +71,19 @@ rhotrue = to_mesh(rholayers)
 veltrue = to_mesh(vellayers)
 
 # %%
-# Save sensors, true model and mesh
+# Save true model and mesh
 fa = to_mesh(falayers)
-fi = to_mesh(filayers)
 fw = to_mesh(fwlayers)
 fr = to_mesh(frlayers)
 
-fpm.fr = fr
-fpm.phi = 1 - fr
+pm.fr = fr
+pm.phi = 1 - fr
 # fpm.show(mesh, rhotrue, veltrue)
 
 assert np.allclose(fa + fi + fw + fr, 1)
 
 np.savez("true_model.npz", rho=rhotrue, vel=veltrue, fa=fa, fi=fi, fw=fw,
          fr=fr)
-
-sensors = np.arange(10, 141, 2.5, dtype="float")
-print(sensors)
-print("Sensors", len(sensors))
-sensors.dump("sensors.npy")
 
 mesh.save("mesh.bms")
 np.savetxt("rhotrue.dat", rhotrue)
