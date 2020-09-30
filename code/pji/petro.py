@@ -59,7 +59,7 @@ class PetMod():
         return fa
         
     def air(self, rho, v):
-        fa = self.va * (1. / v - self.fr / self.vr - self.water(rhho) / self.vw)
+        fa = self.va * (1. / v - self.fr / self.vr - self.water(rho) / self.vw)
         fa[np.isclose(fa, 0)] = 0
         return fa
 
@@ -78,16 +78,16 @@ class PetMod():
         return rho
 
     def rho_deriv_fw(self, fw, fa, fr):
-        return self.rho(fw, fi, fa, fr) * -self.n / fw
+        return self.rho(fw, fa, fr) * -self.n / fw
 
     def rho_deriv_fr(self, fw, fa, fr):
-        return self.rho(fw, fi, fa, fr) * (self.n - self.m) / (fr - 1)
+        return self.rho(fw, fa, fr) * (self.n - self.m) / (fr - 1)
 
     def rho_deriv_fa(self, fw, fa, fr):
         return 0
 
     def slowness(self, fw, fa, fr=None):
-        """Return slowness based on fraction of water `fw` and ice `fi`."""
+        """Return slowness based on fraction of water `fw` and air `fa`."""
         if fr is None:
             fr = 1 - (fw + fa)
 
@@ -128,14 +128,16 @@ class PetMod():
         fig, axs = plt.subplots(3, 2, figsize=(16, 10))
         pg.show(mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
                 logScale=False, cMap="Blues", **kwargs)
-        pg.show(mesh, fa, ax=axs[2, 0], label="Air content", hold=True,
+        pg.show(mesh, fa, ax=axs[1, 0], label="Air content", hold=True,
                 logScale=False, cMap="Greens", **kwargs)
         pg.show(mesh, rho, ax=axs[0, 1], label="Rho", hold=True,
                 cMap="Spectral_r", logScale=True, **kwargs)
         pg.show(mesh, vel, ax=axs[1, 1], label="Velocity", logScale=False,
                 hold=True, **kwargs)
-        pg.show(mesh, self.phi, ax=axs[2, 1], label="Porosity", logScale=False,
-                hold=True, **kwargs)
+        pg.show(mesh, self.phi, ax=axs[2, 0], label="Porosity", logScale=False,
+                cMap='Oranges', hold=True, **kwargs)
+        pg.show(mesh, 1 - self.phi, ax=axs[2, 1], label="Rock content", logScale=False,
+                cMap='Oranges', hold=True, **kwargs)
         for ax in axs.flat:
             ax.set_facecolor("0.5")
         return fig, axs

@@ -43,7 +43,7 @@ class JointMod(pg.ModellingBase):
 
     def fractions(self, model):
         """Split model vector into individual distributions"""
-        return np.reshape(model, (4, self.cellCount))
+        return np.reshape(model, (3, self.cellCount))
 
     def createJacobian(self, model):
         fw, fa, fr = self.fractions(model)
@@ -213,8 +213,8 @@ class JointMod(pg.ModellingBase):
         print(" Air:   %.2f | %.2f" % (np.min(fa), np.max(fa)))
         print(" Rock:  %.2f | %.2f" % (np.min(fr), np.max(fr)))
         print("-" * 30)
-        print(" SUM:   %.2f | %.2f" % (np.min(fa + fw + fi + fr),
-                                       np.max(fa + fw + fi + fr)))
+        print(" SUM:   %.2f | %.2f" % (np.min(fa + fw + fr),
+                                       np.max(fa + fw + fr)))
         print("=" * 30)
         print(" Rho:   %.2e | %.2e" % (np.min(rho), np.max(rho)))
         print(" Vel:   %d | %d" % (np.min(1 / s), np.max(1 / s)))
