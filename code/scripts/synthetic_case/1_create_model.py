@@ -38,10 +38,10 @@ geom.save("geom.bms")
 
 mesh = mt.createMesh(geom, area=1.0); pg.plt.show()
 
-pg.show(mesh, markers=True)
+#~ pg.show(mesh, markers=True)
 
 # Model creation based on pore fractions
-philayers = np.array([0.4, 0.25, 0.1, 0.45, 0.75])
+philayers = np.array([0.9, 0.25, 0.05, 0.45, 0.5])
 frlayers = 1 - philayers
 fwlayers = np.array([0.4, 0.25, 0.03, 0.2, 0.3])
 falayers = philayers - fwlayers
@@ -53,8 +53,8 @@ print(falayers)
 # ~ Fsyn = np.vstack((fwlayers, filayers, falayers, frlayers))
 # ~ np.savetxt("syn_model.dat", Fsyn)
 
-pm = PetMod(phi=philayers, vw=1500., va=330., vr=4000, a=1.2, n=1.5, m=2,
-            rhow=150.)
+pm = PetMod(phi=philayers, vw=1500., va=330., vr=5000, a=1.2, n=1.5, m=2,
+            rhow=100.)
 
 print(falayers + fwlayers + frlayers)
 rholayers = pm.rho(fwlayers, falayers, frlayers)
@@ -79,7 +79,7 @@ fr = to_mesh(frlayers)
 
 pm.fr = fr
 pm.phi = 1 - fr
-# fpm.show(mesh, rhotrue, veltrue)
+#~ pm.show(mesh, rhotrue, veltrue)
 
 assert np.allclose(fa + fw + fr, 1)
 
@@ -89,3 +89,5 @@ np.savez("true_model.npz", rho=rhotrue, vel=veltrue, fa=fa, fw=fw,
 mesh.save("mesh.bms")
 np.savetxt("rhotrue.dat", rhotrue)
 np.savetxt("veltrue.dat", veltrue)
+
+#~ pg.plt.show()
