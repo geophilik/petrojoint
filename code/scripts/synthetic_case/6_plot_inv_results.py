@@ -28,16 +28,13 @@ joint = np.load("joint_inversion_%s.npz" % scenario)
 sensors = np.load("sensors.npy", allow_pickle=True)
 
 # True model
-veltrue, rhotrue, fa, fw, fr = true["vel"], true["rho"], true["fa"], 
-    true["fw"], true["fr"]
+veltrue, rhotrue, fa, fw, fr = true["vel"], true["rho"], true["fa"], true["fw"], true["fr"]
 
 # Conventional inversion
-velest, rhoest, fae, fie, fwe, mask = est["vel"], est["rho"], est["fa"], 
-    est["fw"], est["mask"]
+velest, rhoest, fae, fie, fwe, mask = est["vel"], est["rho"], est["fa"], est["fw"], est["mask"]
 
 # Joint inversion
-veljoint, rhojoint, faj, fwj, frj, maskj = joint["vel"], joint[
-    "rho"], joint["fa"], joint["fw"], joint["fr"], joint["mask"]
+veljoint, rhojoint, faj, fwj, frj, maskj = joint["vel"], joint["rho"], joint["fa"], joint["fw"], joint["fr"], joint["mask"]
 
 
 # Some helper functions
