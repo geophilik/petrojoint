@@ -23,7 +23,8 @@ else:
 mesh = pg.load("mesh.bms")
 meshj = pg.load("paraDomain.bms")
 true = np.load("true_model.npz")
-est = np.load("conventional_%s.npz" % scenario)
+# ~ est = np.load("conventional_%s.npz" % scenario)
+est = np.load("conventional_phet.npz")
 joint = np.load("joint_inversion_%s.npz" % scenario)
 sensors = np.load("sensors.npy", allow_pickle=True)
 
