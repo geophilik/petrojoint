@@ -31,7 +31,7 @@ class JointMod(pg.ModellingBase):
         self.ERT = ertfop
         self.RST = rstfop
         self.fops = [self.RST, self.ERT]
-        self.fpm = petromodel
+        self.pm = petromodel
         self.cellCount = self.mesh.cellCount()
         self.fix_water = fix_water
         self.fix_air = fix_air
@@ -48,8 +48,8 @@ class JointMod(pg.ModellingBase):
     def createJacobian(self, model):
         fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fa, fr)
-        s = self.fpm.slowness(fw, fa, fr)
+        rho = self.pm.rho(fw, fa, fr)
+        s = self.pm.slowness(fw, fa, fr)
 
         self.ERT.fop.createJacobian(rho)
         self.RST.fop.createJacobian(s)
@@ -58,16 +58,16 @@ class JointMod(pg.ModellingBase):
         jacRST = self.RST.fop.jacobian()
 
         # Setting inner derivatives
-        self.jacRSTW = pg.MultRightMatrix(jacRST, r=1. / self.fpm.vw)
-        self.jacRSTA = pg.MultRightMatrix(jacRST, r=1. / self.fpm.va)
-        self.jacRSTR = pg.MultRightMatrix(jacRST, r=1. / self.fpm.vr)
+        self.jacRSTW = pg.MultRightMatrix(jacRST, r=1. / self.pm.vw)
+        self.jacRSTA = pg.MultRightMatrix(jacRST, r=1. / self.pm.va)
+        self.jacRSTR = pg.MultRightMatrix(jacRST, r=1. / self.pm.vr)
 
         self.jacERTW = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fw(fw, fa, fr))
+            jacERT, r=self.pm.rho_deriv_fw(fw, fa, fr))
         self.jacERTA = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fa(fw, fa, fr))
+            jacERT, r=self.pm.rho_deriv_fa(fw, fa, fr))
         self.jacERTR = pg.MultRightMatrix(
-            jacERT, r=self.fpm.rho_deriv_fr(fw, fa, fr))
+            jacERT, r=self.pm.rho_deriv_fr(fw, fa, fr))
 
         # Putting subjacobians together in block matrix
         self.jac = pg.BlockMatrix()
@@ -140,8 +140,8 @@ class JointMod(pg.ModellingBase):
     def showModel(self, model):
         fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fa, fr)
-        s = self.fpm.slowness(fw, fa, fr)
+        rho = self.pm.rho(fw, fa, fr)
+        s = self.pm.slowness(fw, fa, fr)
 
         _, axs = plt.subplots(3, 2)
         pg.show(self.mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
@@ -201,8 +201,8 @@ class JointMod(pg.ModellingBase):
         model = np.nan_to_num(model)
         fw, fa, fr = self.fractions(model)
 
-        rho = self.fpm.rho(fw, fa, fr)
-        s = self.fpm.slowness(fw, fa, fr)
+        rho = self.pm.rho(fw, fa, fr)
+        s = self.pm.slowness(fw, fa, fr)
 
         print("=" * 30)
         print("        Min. | Max.")
