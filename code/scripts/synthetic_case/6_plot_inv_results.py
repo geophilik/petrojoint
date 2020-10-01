@@ -13,31 +13,31 @@ fs = 5.5
 set_style(fs, style="seaborn-dark")
 
 if len(sys.argv) > 1:
-    scenario = "Fig2"
+    scenario = "pest"
     case = 2
 else:
-    scenario = "Fig1"
+    scenario = "pfix"
     case = 1
 
 # Load data
 mesh = pg.load("mesh.bms")
-meshj = pg.load("paraDomain_%d.bms" % case)
+meshj = pg.load("paraDomain.bms")
 true = np.load("true_model.npz")
 est = np.load("conventional_%s.npz" % scenario)
 joint = np.load("joint_inversion_%s.npz" % scenario)
 sensors = np.load("sensors.npy", allow_pickle=True)
 
 # True model
-veltrue, rhotrue, fa, fi, fw, fr = true["vel"], true["rho"], true["fa"], true[
-    "fi"], true["fw"], true["fr"]
+veltrue, rhotrue, fa, fw, fr = true["vel"], true["rho"], true["fa"], 
+    true["fw"], true["fr"]
 
 # Conventional inversion
-velest, rhoest, fae, fie, fwe, mask = est["vel"], est["rho"], est["fa"], est[
-    "fi"], est["fw"], est["mask"]
+velest, rhoest, fae, fie, fwe, mask = est["vel"], est["rho"], est["fa"], 
+    est["fw"], est["mask"]
 
 # Joint inversion
-veljoint, rhojoint, faj, fij, fwj, frj, maskj = joint["vel"], joint[
-    "rho"], joint["fa"], joint["fi"], joint["fw"], joint["fr"], joint["mask"]
+veljoint, rhojoint, faj, fwj, frj, maskj = joint["vel"], joint[
+    "rho"], joint["fa"], joint["fw"], joint["fr"], joint["mask"]
 
 
 # Some helper functions
@@ -103,11 +103,11 @@ def minmax(data):
 
 # %%
 fig = plt.figure(figsize=(7, 4.5))
-grid = ImageGrid(fig, 111, nrows_ncols=(6, 3), axes_pad=[0.03, 0.03],
+grid = ImageGrid(fig, 111, nrows_ncols=(5, 3), axes_pad=[0.03, 0.03],
                  share_all=True, add_all=True, cbar_location="right",
                  cbar_mode="edge", cbar_size="5%", cbar_pad=0.05, aspect=True)
 
-cov = rst_cov(meshj, np.loadtxt("rst_coverage_%d.dat" % case))
+cov = rst_cov(meshj, np.loadtxt("rst_coverage.dat"))
 
 fre = 1 - fwe - fae - fie
 
@@ -115,13 +115,13 @@ labels = ["v (m/s)", r" $\rho$ ($\Omega$m)"]
 labels.extend([r"f$_{\rm %s}$" % x for x in "wiar"])
 
 long_labels = [
-    "Velocity", "Resistivity", "Water content", "Ice content", "Air content",
+    "Velocity", "Resistivity", "Water content", "Air content",
     "Rock content"
 ]
 meshs = [mesh, meshj, meshj]
-cmaps = ["viridis", "Spectral_r", "Blues", "Purples", "Greens", "Oranges"]
+cmaps = ["viridis", "Spectral_r", "Blues", "Greens", "Oranges"]
 datas = [(veltrue, velest, veljoint), (rhotrue, rhoest, rhojoint),
-         (fw, fwe, fwj), (fi, fie, fij), (fa, fae, faj), (fr, fre, frj)]
+         (fw, fwe, fwj), (fa, fae, faj), (fr, fre, frj)]
 
 for i, (row, data, label,
         cmap) in enumerate(zip(grid.axes_row, datas, labels, cmaps)):
@@ -135,10 +135,8 @@ for i, (row, data, label,
     elif i == 2:
         lims = {"cMin": 0.02, "cMax": 0.35}
     elif i == 3:
-        lims = {"cMin": 0, "cMax": 0.3}
-    elif i == 4:
         lims = {"cMin": 0, "cMax": 0.15}
-    elif i == 5:
+    elif i == 4:
         lims = {"cMin": 0.6, "cMax": 0.8}
     else:
         lims = lim(
@@ -180,59 +178,59 @@ def add_labs_to_col(col, labs):
 
 
 labs = [
-    "Inverted", "Inverted", "Transformed", "Transformed", "Transformed",
+    "Inverted", "Inverted", "Transformed", "Transformed",
     "Assumed"
 ]
 
 add_labs_to_col(1, labs)
 
 labs = [
-    "Transformed", "Transformed", "Inverted", "Inverted", "Inverted",
+    "Transformed", "Transformed", "Inverted", "Inverted",
     "Assumed & fixed"
 ]
 
 geom = pg.load("geom.bms")
-if scenario == "Fig2":
-    labs[-1] = "Inverted"
+# ~ if scenario == "Fig2":
+    # ~ labs[-1] = "Inverted"
 
-    # Add labels for covariance reference
-    ax = grid.axes_all[0]
-    mid = geom.xmax() / 2
+    # ~ # Add labels for covariance reference
+    # ~ ax = grid.axes_all[0]
+    # ~ mid = geom.xmax() / 2
 
-    kwargs = dict(va="center", ha="center", fontsize=fs, fontweight="semibold")
-    ax.text(mid, -2.9, "I", color="w", **kwargs)
-    ax.text(20, -10, "II", color="w", **kwargs)
-    ax.text(mid, -10, "III", **kwargs)
-    ax.text(mesh.xmax() - 20, -10, "IV", color="w", **kwargs)
-    ax.text(mid, -20, "V", **kwargs)
+    # ~ kwargs = dict(va="center", ha="center", fontsize=fs, fontweight="semibold")
+    # ~ ax.text(mid, -2.9, "I", color="w", **kwargs)
+    # ~ ax.text(20, -10, "II", color="w", **kwargs)
+    # ~ ax.text(mid, -10, "III", **kwargs)
+    # ~ ax.text(mesh.xmax() - 20, -10, "IV", color="w", **kwargs)
+    # ~ ax.text(mid, -20, "V", **kwargs)
 
 add_labs_to_col(2, labs)
 
-for i, (ax, label) in enumerate(zip(grid.axes_column[0], long_labels)):
-    ax.set_yticks([-5, -15, -25])
-    ax.set_yticklabels([" 5", "15", "25\n"])
-    ax.set_ylabel("Depth (m)", labelpad=1)
-    color = "k" if i not in (1, 3, 5) else "w"
-    add_inner_title(ax, label, loc=3, c=color, frame=False)
+# ~ for i, (ax, label) in enumerate(zip(grid.axes_column[0], long_labels)):
+    # ~ ax.set_yticks([-5, -15, -25])
+    # ~ ax.set_yticklabels([" 5", "15", "25\n"])
+    # ~ ax.set_ylabel("Depth (m)", labelpad=1)
+    # ~ color = "k" if i not in (1, 3, 5) else "w"
+    # ~ add_inner_title(ax, label, loc=3, c=color, frame=False)
 
-    if i == 5:
-        for bound in geom.boundaries():
-            style = "solid"
-            if np.isclose(bound.size(), 14.14, atol=0.5):
-                style = "dotted"
-            pg.mplviewer.drawSelectedMeshBoundaries(ax, [bound], linewidth=0.5,
-                                                    linestyles=style,
-                                                    color="k")
-    else:
-        pg.mplviewer.drawPLC(ax, geom, fillRegion=False, lw=0.5)
+    # ~ if i == 5:
+        # ~ for bound in geom.boundaries():
+            # ~ style = "solid"
+            # ~ if np.isclose(bound.size(), 14.14, atol=0.5):
+                # ~ style = "dotted"
+            # ~ pg.mplviewer.drawSelectedMeshBoundaries(ax, [bound], linewidth=0.5,
+                                                    # ~ linestyles=style,
+                                                    # ~ color="k")
+    # ~ else:
+        # ~ pg.mplviewer.drawPLC(ax, geom, fillRegion=False, lw=0.5)
 
 for i, ax in enumerate(grid.axes_all):
     ax.set_facecolor("0.45")
     ax.plot(sensors,
             np.zeros_like(sensors) + 0.1, marker="o", lw=0, color="k", ms=0.6)
     ax.tick_params(axis='both', which='major')
-    ax.set_xticks([25, 50, 75, 100, 125])
-    ax.set_ylim(-27, 0)
+    # ~ ax.set_xticks([25, 50, 75, 100, 125])
+    # ~ ax.set_ylim(-27, 0)
     ax.set_aspect(1.85)
 
 for row in grid.axes_row[:-1]:
@@ -242,5 +240,5 @@ for row in grid.axes_row[:-1]:
 for ax in grid.axes_row[-1]:
     ax.set_xlabel("x (m)", labelpad=0.2)
 
-fig.savefig("%s_two_columns.pdf" % scenario, dpi=500, bbox_inches="tight",
+fig.savefig("pji_3p_%s.pdf" % scenario, dpi=500, bbox_inches="tight",
             pad_inches=0.0)
