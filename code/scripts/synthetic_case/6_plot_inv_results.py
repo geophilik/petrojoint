@@ -6,7 +6,7 @@ from matplotlib import ticker
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 import pygimli as pg
-from fpinv import add_inner_title, logFormat, rst_cov, set_style
+from pji import add_inner_title, logFormat, rst_cov, set_style
 from pygimli.mplviewer import drawModel
 
 fs = 5.5
