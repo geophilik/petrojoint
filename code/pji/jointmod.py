@@ -73,12 +73,12 @@ class JointMod(pg.ModellingBase):
         self.jac = pg.BlockMatrix()
         nData = 0
         self.jac.addMatrix(self.jacRSTW, nData, 0)
+        self.jac.addMatrix(self.jacRSTI, nData, self.cellCount)
         self.jac.addMatrix(self.jacRSTA, nData, self.cellCount * 2)
-        self.jac.addMatrix(self.jacRSTR, nData, self.cellCount * 3)
         nData += self.RST.fop.data().size()  # update total vector length
         self.jac.addMatrix(self.jacERTW, nData, 0)
+        self.jac.addMatrix(self.jacRSTI, nData, self.cellCount)
         self.jac.addMatrix(self.jacERTA, nData, self.cellCount * 2)
-        self.jac.addMatrix(self.jacERTR, nData, self.cellCount * 3)
         self.setJacobian(self.jac)
 
     def createConstraints(self):
@@ -108,7 +108,6 @@ class JointMod(pg.ModellingBase):
         self._C.addMatrixEntry(cid, 0, 0)
         self._C.addMatrixEntry(cid, self._Ctmp.rows(), self.cellCount)
         self._C.addMatrixEntry(cid, self._Ctmp.rows() * 2, self.cellCount * 2)
-        self._C.addMatrixEntry(cid, self._Ctmp.rows() * 3, self.cellCount * 3)
         self.setConstraints(self._C)
 
         # Identity matrix for interparameter regularization
@@ -119,7 +118,6 @@ class JointMod(pg.ModellingBase):
         self._G.addMatrixEntry(iid, 0, 0)
         self._G.addMatrixEntry(iid, 0, self.cellCount)
         self._G.addMatrixEntry(iid, 0, self.cellCount * 2)
-        self._G.addMatrixEntry(iid, 0, self.cellCount * 3)
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
