@@ -70,7 +70,7 @@ class LSQRInversion(pg.RInversion):
         #        self.leftJ = self.dScale / tD.deriv(self.response())
         self.rightJ = 1.0 / tM.deriv(model)
         print(J.cols(), J.rows)
-        print(len(self.leftJ)
+        print(len(self.leftJ))
         print(len(self.rightJ))
         self.JJ = pg.matrix.MultLeftRightMatrix(J, self.leftJ, self.rightJ)
         #        self.A.addMatrix(self.JJ, 0, 0)
