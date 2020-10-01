@@ -51,12 +51,12 @@ class PetMod():
         fw[np.isclose(fw, 0)] = 0
         return fw
 
-    def air(self, rho, v):
-        fa = ((self.vi * self.va / (self.vi - self.va) * (
-            1. / v - self.fr / self.vr - self.phi / self.vi - self.water(rho) *
-            (1. / self.vw - 1. / self.vi))))
-        fa[np.isclose(fa, 0)] = 0
-        return fa
+    # ~ def air(self, rho, v):
+        # ~ fa = ((self.vi * self.va / (self.vi - self.va) * (
+            # ~ 1. / v - self.fr / self.vr - self.phi / self.vi - self.water(rho) *
+            # ~ (1. / self.vw - 1. / self.vi))))
+        # ~ fa[np.isclose(fa, 0)] = 0
+        # ~ return fa
         
     def air(self, rho, v):
         fa = self.va * (1. / v - self.fr / self.vr - self.water(rho) / self.vw)
