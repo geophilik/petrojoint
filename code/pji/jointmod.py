@@ -77,7 +77,7 @@ class JointMod(pg.ModellingBase):
         self.jac.addMatrix(self.jacRSTR, nData, self.cellCount * 2)
         nData += self.RST.fop.data().size()  # update total vector length
         self.jac.addMatrix(self.jacERTW, nData, 0)
-        self.jac.addMatrix(self.jacRSTA, nData, self.cellCount)
+        self.jac.addMatrix(self.jacERTA, nData, self.cellCount)
         self.jac.addMatrix(self.jacERTR, nData, self.cellCount * 2)
         self.setJacobian(self.jac)
 
