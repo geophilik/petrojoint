@@ -9,7 +9,7 @@ import pygimli as pg
 from pji import add_inner_title, logFormat, rst_cov, set_style
 from pygimli.mplviewer import drawModel
 
-fs = 5.5
+fs = 7
 set_style(fs, style="seaborn-dark")
 
 if len(sys.argv) > 1:
@@ -32,7 +32,7 @@ sensors = np.load("sensors.npy", allow_pickle=True)
 veltrue, rhotrue, fa, fw, fr = true["vel"], true["rho"], true["fa"], true["fw"], true["fr"]
 
 # Conventional inversion
-velest, rhoest, fae, fie, fwe, mask = est["vel"], est["rho"], est["fa"], est["fw"], est["mask"]
+velest, rhoest, fae, fwe, mask = est["vel"], est["rho"], est["fa"], est["fw"], est["mask"]
 
 # Joint inversion
 veljoint, rhojoint, faj, fwj, frj, maskj = joint["vel"], joint["rho"], joint["fa"], joint["fw"], joint["fr"], joint["mask"]
@@ -50,7 +50,7 @@ def update_ticks(cb, log=False, label="", cMin=None, cMax=None):
             tick.set_verticalalignment("top")
 
     cb.ax.annotate(label, xy=(1, 0.5), xycoords='axes fraction',
-                   xytext=(10, 0), textcoords='offset pixels',
+                   xytext=(30, 0), textcoords='offset pixels',
                    horizontalalignment='center', verticalalignment='center',
                    rotation=90, fontsize=fs, fontweight="regular")
 
@@ -100,14 +100,14 @@ def minmax(data):
 
 
 # %%
-fig = plt.figure(figsize=(7, 4.5))
+fig = plt.figure(figsize=(9, 9))
 grid = ImageGrid(fig, 111, nrows_ncols=(5, 3), axes_pad=[0.03, 0.03],
                  share_all=True, add_all=True, cbar_location="right",
                  cbar_mode="edge", cbar_size="5%", cbar_pad=0.05, aspect=True)
 
 cov = rst_cov(meshj, np.loadtxt("rst_coverage.dat"))
 
-fre = 1 - fwe - fae - fie
+fre = 1 - fwe - fae
 
 labels = ["v (m/s)", r" $\rho$ ($\Omega$m)"]
 labels.extend([r"f$_{\rm %s}$" % x for x in "wiar"])
@@ -126,16 +126,16 @@ for i, (row, data, label,
     print("Plotting", label)
     borderpad = 0.2
     if i == 0:
-        lims = {"cMin": 1500, "cMax": 5000}
+        lims = {"cMin": 500, "cMax": 4000}
     elif i == 1:
         lims = {"cMin": 1e3, "cMax": 1e5}
         borderpad = 0.07
     elif i == 2:
-        lims = {"cMin": 0.02, "cMax": 0.35}
+        lims = {"cMin": 0.05, "cMax": 0.35}
     elif i == 3:
-        lims = {"cMin": 0, "cMax": 0.15}
+        lims = {"cMin": 0, "cMax": 0.5}
     elif i == 4:
-        lims = {"cMin": 0.6, "cMax": 0.8}
+        lims = {"cMin": 0.1, "cMax": 0.9}
     else:
         lims = lim(
             list(data[0]) + list(data[1][cov > 0]) + list(data[2][cov > 0]))
@@ -151,7 +151,7 @@ for i, (row, data, label,
         # ax.text(0.987, 0.05, minmax(data[j]), transform=ax.transAxes, fontsize=fs,
         #         ha="right", color=color)
         add_inner_title(ax, minmax(data[j][coverage > 0]), loc=4, size=fs,
-                        fw="regular", frame=False, c=color,
+                        fw="regular", frame=False, c='k',
                         borderpad=borderpad)
         ims[j].set_cmap(cmap)
 
@@ -159,7 +159,7 @@ for i, (row, data, label,
     update_ticks(cb, log=logScale, label=label, **lims)
 
 for ax, title, num in zip(grid.axes_row[0], [
-        "True model", "Conventional inversion and 4PM",
+        "True model", "Inversion + Petrophy. model",
         "Petrophysical joint inversion"
 ], "abc"):
     ax.set_title(title, fontsize=fs + 1, fontweight="bold")
@@ -168,11 +168,11 @@ for ax, title, num in zip(grid.axes_row[0], [
 
 def add_labs_to_col(col, labs):
     for ax, lab in zip(grid.axes_column[col], labs):
-        if lab != "Inverted":
-            weight = "regular"
-            c = "w"
-            add_inner_title(ax, lab, loc=3, size=fs, fw=weight, frame=False,
-                            c=c)
+        # ~ if lab != "Inverted":
+        weight = "regular"
+        c = "k"
+        add_inner_title(ax, lab, loc=3, size=fs, fw=weight, frame=False,
+                        c=c)
 
 
 labs = [
@@ -184,10 +184,10 @@ add_labs_to_col(1, labs)
 
 labs = [
     "Transformed", "Transformed", "Inverted", "Inverted",
-    "Assumed & fixed"
+    "Inverted"
 ]
 
-geom = pg.load("geom.bms")
+# ~ geom = pg.load("geom.bms")
 # ~ if scenario == "Fig2":
     # ~ labs[-1] = "Inverted"
 
@@ -204,12 +204,12 @@ geom = pg.load("geom.bms")
 
 add_labs_to_col(2, labs)
 
-# ~ for i, (ax, label) in enumerate(zip(grid.axes_column[0], long_labels)):
+for i, (ax, label) in enumerate(zip(grid.axes_column[0], long_labels)):
     # ~ ax.set_yticks([-5, -15, -25])
     # ~ ax.set_yticklabels([" 5", "15", "25\n"])
     # ~ ax.set_ylabel("Depth (m)", labelpad=1)
     # ~ color = "k" if i not in (1, 3, 5) else "w"
-    # ~ add_inner_title(ax, label, loc=3, c=color, frame=False)
+    add_inner_title(ax, label, loc=3, c="k", frame=False)
 
     # ~ if i == 5:
         # ~ for bound in geom.boundaries():
@@ -238,5 +238,5 @@ for row in grid.axes_row[:-1]:
 for ax in grid.axes_row[-1]:
     ax.set_xlabel("x (m)", labelpad=0.2)
 
-fig.savefig("pji_3p_%s.pdf" % scenario, dpi=500, bbox_inches="tight",
+fig.savefig("pji_3p_%s.png" % scenario, dpi=500, bbox_inches="tight",
             pad_inches=0.0)
