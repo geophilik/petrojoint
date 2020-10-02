@@ -58,7 +58,8 @@ if fix_poro:
 else:
     phi = poro
 
-pm = PetMod(phi=phi)
+pm = PetMod(phi=phi, vw=1500., va=330., vr=5000, a=1.2, n=1.5, m=2,
+            rhow=100.)
 
 # Setup managers and equip with meshes
 ert = ERTManager()

@@ -27,7 +27,8 @@ else:
     phi = np.array(phi)
 
 # Save some stuff
-fpm = PetMod(phi=phi)
+fpm = PetMod(phi=phi, vw=1500., va=330., vr=5000, a=1.2, n=1.5, m=2,
+            rhow=100.)
 fae, fwe, maske = fpm.all(resinv, vest)
 print(np.min(fwe), np.max(fwe))
 np.savez("conventional_%s.npz" % scenario, vel=np.array(vest),
