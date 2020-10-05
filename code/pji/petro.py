@@ -58,20 +58,20 @@ class PetMod():
         # ~ fa[np.isclose(fa, 0)] = 0
         # ~ return fa
         
-    # ~ def air(self, rho, v):
-        # ~ fa = self.va * (1. / v - self.fr / self.vr - self.water(rho) / self.vw)
-        # ~ fa[np.isclose(fa, 0)] = 0
-        # ~ return fa
+    def air(self, rho, v):
+        fa = self.va * (1. / v - self.fr / self.vr - self.water(rho) / self.vw)
+        fa[np.isclose(fa, 0)] = 0
+        return fa
         
     # ~ def air(self, rho, v):
         # ~ fa = (2 - self.water(rho) + (1 + v / self.vw) - self.fr * (1 + v / self.vr)) / (1 + v / self.va)
         # ~ fa[np.isclose(fa, 0)] = 0
         # ~ return fa
         
-    def air(self, rho, v):
-        fa = (1 / 2) * (1 - self.water(rho) - self.fr + self.va * (1 / v - self.water(rho) / self.vw - self.fr / self.vr))
-        fa[np.isclose(fa, 0)] = 0
-        return fa
+    # ~ def air(self, rho, v):
+        # ~ fa = (1 / 2) * (1 - self.water(rho) - self.fr + self.va * (1 / v - self.water(rho) / self.vw - self.fr / self.vr))
+        # ~ fa[np.isclose(fa, 0)] = 0
+        # ~ return fa
 
     def rho(self, fw, fa, fr=None):
         """Return electrical resistivity based on fraction of water `fw`."""
