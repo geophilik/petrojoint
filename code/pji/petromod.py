@@ -64,24 +64,33 @@ class PPMod():
 
     def water_old(self, rho):
         fw = ((self.a * self.rhow * self.phi**self.n) /
-              (rho * self.phi**self.m))**(1 / self.n)
+              (rho * self.phi**self.m))**(1. / self.n)
         fw[np.isclose(fw, 0)] = 0
         return fw
 
-    def water(self, rhohi, rholo):
+    def water(self, rholo, rhohi):
         sigmahi = 1. / rhohi
         sigmalo = 1. / rholo
         
-        fw = ((1./self.rhow) * self.phi**n / self.phi**m * \
-              (sigmahi - (sigmahi - sigmalo) / sigmahi))**(1/n)
+        mn = sigmahi - sigmalo
+        mn[mn < 0] = 0
+        
+        # ~ fw = (self.rhow * self.phi**self.n / self.phi**self.m * \
+              # ~ (sigmahi - (mn) / self.R))**(1. / self.n)
+        fw = (self.rhow * self.phi**(self.n-self.m) * \
+              (sigmahi - (mn) / self.R))**(1. / self.n)
         fw[np.isclose(fw, 0)] = 0
         return fw
-        
-    def cec(self, rhohi, rholo, fw):
+
+    def cec(self, rholo, rhohi, fw):
         sigmahi = 1. / rhohi
         sigmalo = 1. / rholo
         
-        cec = (self.phi / fw)**(n-1) * self.phi**(m-1) * (sigmahi - sigmalo) / (self.rhog * self.l)
+        mn = sigmahi - sigmalo
+        mn[mn < 0] = 0
+        
+        # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
+        cec = self.phi**(self.n + self.m - 2) * (mn) / (fw**(self.n-1) * self.rhog * self.l)
         
         return cec
 
@@ -92,8 +101,8 @@ class PPMod():
         # ~ fa[np.isclose(fa, 0)] = 0
         # ~ return fa
         
-    def air(self, rho, v):
-        fa = self.va * (1. / v - self.fr / self.vr - self.water(rho) / self.vw)
+    def air(self, rholo, rhohi, v):
+        fa = self.va * (1. / v - self.fr / self.vr - self.water(rholo, rhohi) / self.vw)
         fa[np.isclose(fa, 0)] = 0
         return fa
         
@@ -129,15 +138,17 @@ class PPMod():
         else:
             phi = 1 - fr
 
-        sigma = (fw / 1 - fr)**n * (1-fr)**m * (1 / self.rhow) +
-                (fw / 1 - fr)**(n-1) * (1 - fr)**(m-1) * self.rhog * self.B * cec
-        rho = 1. / sigma
+        rho = 1. / self.sigmahi(fw, fa, cec, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
-
+    
+    def sigmahi(self, fw, fa, cec, fr):
+        return (fw / phi)**n * (phi)**m * (1 / self.rhow) + \
+               (fw / phi)**(n-1) * (phi)**(m-1) * self.rhog * self.B * cec
+    
     def rholo(self, fw, fa, cec, fr=None):
         """Return low frequency electrical resistivity based on 
         fraction of water `fw` and cation exchange capacity `CEC`."""
@@ -146,15 +157,17 @@ class PPMod():
         else:
             phi = 1 - fr
 
-        sigma = (fw / 1 - fr)**n * (1-fr)**m * (1 / self.rhow) +
-                (fw / 1 - fr)**(n-1) * (1 - fr)**(m-1) * self.rhog * (self.B - self.l) * cec
-        rho = 1. / sigma
+        rho = 1. / self.sigmalo(fw, fa, cec, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
-
+    
+    def sigmalo(self, fw, fa, cec, fr):
+        return (fw / phi)**n * (phi)**m * (1 / self.rhow) + \
+               (fw / phi)**(n-1) * (phi)**(m-1) * self.rhog * (self.B - self.l) * cec
+    
     def rho_deriv_fw(self, fw, fa, fr):
         return self.rho(fw, fa, fr) * -self.n / fw
 
@@ -175,16 +188,18 @@ class PPMod():
             s[s <= 0] = np.min(s[s > 0])
         return s
 
-    def all(self, rho, v, mask=False):
+    def all(self, rholo, rhohi, v, mask=False):
         """Syntatic sugar for all fractions including a mask for unrealistic
         values."""
 
         # RVectors sometimes cause segfaults
-        rho = np.array(rho)
+        rholo = np.array(rholo)
+        rhohi = np.array(rhohi)
         v = np.array(v)
 
-        fa = self.air(rho, v)
-        fw = self.water(rho)
+        fa = self.air(rholo, rhohi, v)
+        fw = self.water(rholo, rhohi)
+        cec = self.cec(rholo, rhohi, fw)
 
         # Check that fractions are between 0 and 1
         array_mask = np.array(((fa < 0) | (fa > 1 - self.fr))
@@ -198,7 +213,7 @@ class PPMod():
             fa = np.ma.array(fa, mask=(fa < 0) | (fa > 1 - self.fr))
             fw = np.ma.array(fw, mask=(fw < 0) | (fw > 1 - self.fr))
 
-        return fa, fw, array_mask
+        return fa, fw, cec, array_mask
 
     def show(self, mesh, rho, vel, mask=True, **kwargs):
         fa, fw, mask = self.all(rho, vel, mask=mask)
