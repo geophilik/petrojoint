@@ -6,7 +6,7 @@ import pygimli as pg
 
 
 class JointMod(pg.ModellingBase):
-    def __init__(self, mesh, ertfop, rstfop, petromodel, fix_poro=True,
+    def __init__(self, mesh, ertlofop, erthifop, srtfop, petromodel, fix_poro=True,
                  zWeight=1, verbose=True, corr_l=None, fix_water=False,
                  fix_air=False):
         """Joint petrophysical modeling operator.
@@ -14,7 +14,8 @@ class JointMod(pg.ModellingBase):
         Parameters
         ----------
         mesh : pyGIMLi mesh
-        ertfop : ERT forward operator
+        ertlofop : ERT low forward operator
+        erthifop : ERT high forward operator
         rstfop : RST forward operator
         petromodel : Petrophysical four-phase model
         zWeight : zWeight for more or less layering
@@ -28,9 +29,10 @@ class JointMod(pg.ModellingBase):
         """
         pg.ModellingBase.__init__(self, verbose)
         self.mesh = pg.Mesh(mesh)
-        self.ERT = ertfop
-        self.RST = rstfop
-        self.fops = [self.RST, self.ERT]
+        self.ERTlo = ertlofop
+        self.ERThi = erthifop
+        self.SRT = srtfop
+        self.fops = [self.SRT, self.ERThi, self.ERTlo]
         self.pm = petromodel
         self.cellCount = self.mesh.cellCount()
         self.fix_water = fix_water
@@ -43,42 +45,64 @@ class JointMod(pg.ModellingBase):
 
     def fractions(self, model):
         """Split model vector into individual distributions"""
-        return np.reshape(model, (3, self.cellCount))
+        return np.reshape(model, (4, self.cellCount))
 
     def createJacobian(self, model):
-        fw, fa, fr = self.fractions(model)
+        fw, fa, cec, fr = self.fractions(model)
 
-        rho = self.pm.rho(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fa, cec, fr)
         s = self.pm.slowness(fw, fa, fr)
 
-        self.ERT.fop.createJacobian(rho)
-        self.RST.fop.createJacobian(s)
+        self.ERTlo.fop.createJacobian(rholo)
+        self.ERThi.fop.createJacobian(rhohi)
+        self.SRT.fop.createJacobian(s)
 
-        jacERT = self.ERT.fop.jacobian()
-        jacRST = self.RST.fop.jacobian()
+        jacERTlo = self.ERTlo.fop.jacobian()
+        jacERThi = self.ERThi.fop.jacobian()
+        jacSRT = self.SRT.fop.jacobian()
 
         # Setting inner derivatives
-        self.jacRSTW = pg.MultRightMatrix(jacRST, r=1. / self.pm.vw)
-        self.jacRSTA = pg.MultRightMatrix(jacRST, r=1. / self.pm.va)
-        self.jacRSTR = pg.MultRightMatrix(jacRST, r=1. / self.pm.vr)
+        self.jacSRTW = pg.MultRightMatrix(jacRST, r=1. / self.pm.vw)
+        self.jacSRTA = pg.MultRightMatrix(jacRST, r=1. / self.pm.va)
+        self.jacSRTC = pg.MultRightMatrix(jacSRT, r=0)
+        self.jacSRTR = pg.MultRightMatrix(jacRST, r=1. / self.pm.vr)
 
-        self.jacERTW = pg.MultRightMatrix(
-            jacERT, r=self.pm.rho_deriv_fw(fw, fa, fr))
-        self.jacERTA = pg.MultRightMatrix(
-            jacERT, r=self.pm.rho_deriv_fa(fw, fa, fr))
-        self.jacERTR = pg.MultRightMatrix(
-            jacERT, r=self.pm.rho_deriv_fr(fw, fa, fr))
+        self.jacERTloW = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_fw(fw, fa, cec, fr))
+        self.jacERTloA = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_fa(fw, fa, cec, fr))
+        self.jacERTloC = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_cec(fw, fa, cec, fr))
+        self.jacERTloR = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_fr(fw, fa, cec, fr))
+
+        self.jacERThiW = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_fw(fw, fa, cec, fr))
+        self.jacERThiA = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_fa(fw, fa, cec, fr))
+        self.jacERThiC = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_cec(fw, fa, cec, fr))
+        self.jacERThiR = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_fr(fw, fa, cec, fr))
 
         # Putting subjacobians together in block matrix
         self.jac = pg.BlockMatrix()
         nData = 0
-        self.jac.addMatrix(self.jacRSTW, nData, 0)
-        self.jac.addMatrix(self.jacRSTA, nData, self.cellCount)
-        self.jac.addMatrix(self.jacRSTR, nData, self.cellCount * 2)
-        nData += self.RST.fop.data().size()  # update total vector length
-        self.jac.addMatrix(self.jacERTW, nData, 0)
-        self.jac.addMatrix(self.jacERTA, nData, self.cellCount)
-        self.jac.addMatrix(self.jacERTR, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacSRTW, nData, 0)
+        self.jac.addMatrix(self.jacSRTA, nData, self.cellCount)
+        self.jac.addMatrix(self.jacSRTC, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacSRTR, nData, self.cellCount * 3)
+        nData += self.SRT.fop.data().size()  # update total vector length
+        self.jac.addMatrix(self.jacERTloW, nData, 0)
+        self.jac.addMatrix(self.jacERTloA, nData, self.cellCount)
+        self.jac.addMatrix(self.jacERTloC, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERTloR, nData, self.cellCount * 3)
+        nData += self.ERTlo.fop.data().size()
+        self.jac.addMatrix(self.jacERThiW, nData, 0)
+        self.jac.addMatrix(self.jacERThiA, nData, self.cellCount)
+        self.jac.addMatrix(self.jacERThiC, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
         self.setJacobian(self.jac)
 
     def createConstraints(self):
@@ -87,7 +111,7 @@ class JointMod(pg.ModellingBase):
 
         if self.corr_l is None:
             pg.info("Using smoothing with zWeight = %.2f." % self.zWeight)
-            rm = self.RST.fop.regionManager()
+            rm = self.SRT.fop.regionManager()
             rm.fillConstraints(self._Ctmp)
 
             # Set zWeight
@@ -121,8 +145,8 @@ class JointMod(pg.ModellingBase):
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
-        phases = ["water", "air", "rock matrix"]
-        for i, phase in enumerate([self.fix_water, self.fix_air,
+        phases = ["water", "air", "cec", "rock matrix"]
+        for i, phase in enumerate([self.fix_water, self.fix_air, self.fix_cec,
                                    self.fix_poro]):
             name = phases[i]
             vec = pg.RVector(self.cellCount)
@@ -138,58 +162,76 @@ class JointMod(pg.ModellingBase):
                               self._G.rows(), self.cellCount * i)
 
     def showModel(self, model):
-        fw, fa, fr = self.fractions(model)
+        fw, fa, cec, fr = self.fractions(model)
 
-        rho = self.pm.rho(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fa, cec, fr)
         s = self.pm.slowness(fw, fa, fr)
 
-        _, axs = plt.subplots(3, 2)
+        _, axs = plt.subplots(3, 3)
         pg.show(self.mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
                 logScale=False, cMap="Blues")
         pg.show(self.mesh, fa, ax=axs[2, 0], label="Air content", hold=True,
                 logScale=False, cMap="Greens")
         pg.show(self.mesh, fr, ax=axs[2, 1], label="Rock matrix content",
                 hold=True, logScale=False, cMap="Oranges")
-        pg.show(self.mesh, rho, ax=axs[0, 1], label="Rho", hold=True,
+        pg.show(self.mesh, rholo, ax=axs[0, 1], label="Rho low", hold=True,
+                cMap="Spectral_r")
+        pg.show(self.mesh, rhohi, ax=axs[0, 2], label="Rho high", hold=True,
                 cMap="Spectral_r")
         pg.show(self.mesh, 1 / s, ax=axs[1, 1], label="Velocity")
 
     def showFit(self, model):
         resp = self.response(model)
 
-        fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-        t_resp = resp[:self.RST.dataContainer.size()]
-        rhoa_resp = resp[self.RST.dataContainer.size():]
-        self.RST.showData(response=t_resp, ax=axs[0, 0])
+        fig, axs = plt.subplots(2, 3, figsize=(10, 10))
+        t_resp = resp[:self.SRT.dataContainer.size()]
+        rholoa_resp = resp[self.SRT.dataContainer.size():]
+        rhohia_resp = resp[self.SRT.dataContainer.size():]
+        self.SRT.showData(response=t_resp, ax=axs[0, 0])
 
-        t_fit = t_resp - self.RST.dataContainer("t")
+        t_fit = t_resp - self.SRT.dataContainer("t")
         lim = np.max(np.abs(t_fit))
         axs[0, 0].set_title("Traveltime curves with fit")
         axs[1, 0].set_title("Deviation between traveltimes")
-        self.RST.showVA(vals=t_fit, ax=axs[1, 0], cMin=-lim, cMax=lim,
+        self.SRT.showVA(vals=t_fit, ax=axs[1, 0], cMin=-lim, cMax=lim,
                         cmap="RdBu_r")
 
-        rhoa_fit = (self.ERT.data("rhoa") - rhoa_resp) / rhoa_resp * 100
-        lim = np.max(np.abs(rhoa_fit))
-        pb.show(self.ERT.data, ax=axs[0, 1], label=r"Measured data $\rho_a$")
-        pb.show(self.ERT.data, vals=rhoa_fit, cMin=-lim, cMax=lim,
+        rholoa_fit = (self.ERTlo.data("rhoa") - rholoa_resp) / rholoa_resp * 100
+        lim = np.max(np.abs(rholoa_fit))
+        pb.show(self.ERTlo.data, ax=axs[0, 1], label=r"Measured data $\rho_a$")
+        pb.show(self.ERTlo.data, vals=rhoa_fit, cMin=-lim, cMax=lim,
                 label="Relative fit (%%)", cMap="RdBu_r", ax=axs[1, 1])
+
+        rhohia_fit = (self.ERThi.data("rhoa") - rhohia_resp) / rhohia_resp * 100
+        lim = np.max(np.abs(rhohia_fit))
+        pb.show(self.ERThi.data, ax=axs[0, 2], label=r"Measured data $\rho_a$")
+        pb.show(self.ERThi.data, vals=rhoa_fit, cMin=-lim, cMax=lim,
+                label="Relative fit (%%)", cMap="RdBu_r", ax=axs[1, 2])
         fig.show()
         return fig
 
-    def ERTchi2(self, model, error):  # chi2 and relative rms for the rhoa data
+    def ERTlochi2(self, model, error):  # chi2 and relative rms for the rhoa data
         resp = self.response(model)
-        resprhoa = resp[self.RST.dataContainer.size():]
-        rhoaerr = error[self.RST.dataContainer.size():]
-        chi2rhoa = pg.utils.chi2(self.ERT.data("rhoa"), resprhoa, rhoaerr)
-        rmsrhoa = pg.rrms(self.ERT.data("rhoa"), resprhoa)
-        return chi2rhoa, rmsrhoa
+        resprholoa = resp[self.SRT.dataContainer.size():]
+        rholoaerr = error[self.SRT.dataContainer.size():]
+        chi2rholoa = pg.utils.chi2(self.ERTlo.data("rhoa"), resprholoa, rholoaerr)
+        rmsrholoa = pg.rrms(self.ERTlo.data("rhoa"), resprholoa)
+        return chi2rholoa, rmsrholoa
 
-    def RSTchi2(self, model, error,
+    def ERThichi2(self, model, error):  # chi2 and relative rms for the rhoa data
+        resp = self.response(model)
+        resprhohia = resp[self.SRT.dataContainer.size():]
+        rhohiaerr = error[self.SRT.dataContainer.size():]
+        chi2rhohia = pg.utils.chi2(self.ERThi.data("rhoa"), resprhohia, rhohiaerr)
+        rmsrhohia = pg.rrms(self.ERThi.data("rhoa"), resprhohia)
+        return chi2rhohia, rmsrhohia
+
+    def SRTchi2(self, model, error,
                 data):  # chi2 and relative rms for the travel time data
         resp = self.response(model)
-        resptt = resp[:self.RST.dataContainer.size()]
-        tterr = error[:self.RST.dataContainer.size()]
+        resptt = resp[:self.SRT.dataContainer.size()]
+        tterr = error[:self.SRT.dataContainer.size()]
         chi2tt = pg.utils.chi2(data, resptt, tterr)
         rmstt = np.sqrt(np.mean((resptt - data)**2))
         return chi2tt, rmstt
@@ -199,9 +241,10 @@ class JointMod(pg.ModellingBase):
 
     def response_mt(self, model, i=0):
         model = np.nan_to_num(model)
-        fw, fa, fr = self.fractions(model)
+        fw, fa, cec, fr = self.fractions(model)
 
-        rho = self.pm.rho(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fa, cec, fr)
         s = self.pm.slowness(fw, fa, fr)
 
         print("=" * 30)
@@ -213,11 +256,16 @@ class JointMod(pg.ModellingBase):
         print("-" * 30)
         print(" SUM:   %.2f | %.2f" % (np.min(fa + fw + fr),
                                        np.max(fa + fw + fr)))
+        print("-" * 30)
+        print(" CEC: %.2f | %.2f" % (np.min(cec), np.max(cec)))
+        print("-" * 30)
         print("=" * 30)
-        print(" Rho:   %.2e | %.2e" % (np.min(rho), np.max(rho)))
+        print(" Rho:   %.2e | %.2e" % (np.min(rholo), np.max(rholo)))
+        print(" Rho:   %.2e | %.2e" % (np.min(rhohi), np.max(rhohi)))
         print(" Vel:   %d | %d" % (np.min(1 / s), np.max(1 / s)))
 
         t = self.RST.fop.response(s)
-        rhoa = self.ERT.fop.response(rho)
+        rholoa = self.ERTlo.fop.response(rholo)
+        rhohia = self.ERThi.fop.response(rhohi)
 
-        return pg.cat(t, rhoa)
+        return pg.cat(t, rholoa, rhohia)
