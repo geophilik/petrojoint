@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 NAME = 'pji'
 FULLNAME = NAME
 AUTHOR = "Matthias Steiner"
-AUTHOR_EMAIL = 'matthias.steiner.@geo.tuwien.ac.at'
+AUTHOR_EMAIL = 'matthias.steiner@geo.tuwien.ac.at'
 LICENSE = "BSD License"
 URL = ""
 DESCRIPTION = ""
