@@ -16,7 +16,7 @@ class JointMod(pg.ModellingBase):
         mesh : pyGIMLi mesh
         ertlofop : ERT low forward operator
         erthifop : ERT high forward operator
-        rstfop : RST forward operator
+        srtfop : SRT forward operator
         petromodel : Petrophysical four-phase model
         zWeight : zWeight for more or less layering
         verbose : Be more verbose
@@ -63,10 +63,10 @@ class JointMod(pg.ModellingBase):
         jacSRT = self.SRT.fop.jacobian()
 
         # Setting inner derivatives
-        self.jacSRTW = pg.MultRightMatrix(jacRST, r=1. / self.pm.vw)
-        self.jacSRTA = pg.MultRightMatrix(jacRST, r=1. / self.pm.va)
+        self.jacSRTW = pg.MultRightMatrix(jacSRT, r=1. / self.pm.vw)
+        self.jacSRTA = pg.MultRightMatrix(jacSRT, r=1. / self.pm.va)
         self.jacSRTC = pg.MultRightMatrix(jacSRT, r=0)
-        self.jacSRTR = pg.MultRightMatrix(jacRST, r=1. / self.pm.vr)
+        self.jacSRTR = pg.MultRightMatrix(jacSRT, r=1. / self.pm.vr)
 
         self.jacERTloW = pg.MultRightMatrix(
             jacERTlo, r=self.pm.rholo_deriv_fw(fw, fa, cec, fr))
@@ -264,7 +264,7 @@ class JointMod(pg.ModellingBase):
         print(" Rho:   %.2e | %.2e" % (np.min(rhohi), np.max(rhohi)))
         print(" Vel:   %d | %d" % (np.min(1 / s), np.max(1 / s)))
 
-        t = self.RST.fop.response(s)
+        t = self.SRT.fop.response(s)
         rholoa = self.ERTlo.fop.response(rholo)
         rhohia = self.ERThi.fop.response(rhohi)
 
