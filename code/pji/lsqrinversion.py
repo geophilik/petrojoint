@@ -49,6 +49,9 @@ class LSQRInversion(pg.RInversion):
         return self.model()
 
     def oneStep(self):
+        print("#" * 30)
+        print('one step')
+        print("#" * 30)
         """One inversion step."""
         model = self.model()
         if len(self.response()) != len(self.data()):

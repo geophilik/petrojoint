@@ -8,7 +8,7 @@ import pygimli as pg
 class JointMod(pg.ModellingBase):
     def __init__(self, mesh, ertlofop, erthifop, srtfop, petromodel, fix_poro=True,
                  zWeight=1, verbose=True, corr_l=None, fix_water=False,
-                 fix_air=False):
+                 fix_air=False, fix_cec=False):
         """Joint petrophysical modeling operator.
 
         Parameters
@@ -37,6 +37,7 @@ class JointMod(pg.ModellingBase):
         self.cellCount = self.mesh.cellCount()
         self.fix_water = fix_water
         self.fix_air = fix_air
+        self.fix_cec = fix_cec
         self.fix_poro = fix_poro
         self.zWeight = zWeight
         # self.fix_cells = fix_cells
@@ -48,16 +49,32 @@ class JointMod(pg.ModellingBase):
         return np.reshape(model, (4, self.cellCount))
 
     def createJacobian(self, model):
+        print('*' * 30)
+        print('here')
+        print('*' * 30)
         fw, fa, cec, fr = self.fractions(model)
+        
+        # ~ print(fw, fa, cec, fr)
 
         rholo = self.pm.rholo(fw, fa, cec, fr)
         rhohi = self.pm.rhohi(fw, fa, cec, fr)
         s = self.pm.slowness(fw, fa, fr)
+        
+        # ~ print(rholo, rhohi, s)
 
         self.ERTlo.fop.createJacobian(rholo)
+        print('*' * 30)
+        print('ERTlo done')
+        print('*' * 30)
         self.ERThi.fop.createJacobian(rhohi)
+        print('*' * 30)
+        print('ERThi done')
+        print('*' * 30)
         self.SRT.fop.createJacobian(s)
-
+        print('*' * 30)
+        print('SRT done')
+        print('*' * 30)
+        
         jacERTlo = self.ERTlo.fop.jacobian()
         jacERThi = self.ERThi.fop.jacobian()
         jacSRT = self.SRT.fop.jacobian()
@@ -103,6 +120,11 @@ class JointMod(pg.ModellingBase):
         self.jac.addMatrix(self.jacERThiA, nData, self.cellCount)
         self.jac.addMatrix(self.jacERThiC, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
+        
+        print('*' * 30)
+        print('and then here')
+        print('*' * 30)
+        
         self.setJacobian(self.jac)
 
     def createConstraints(self):
@@ -270,4 +292,4 @@ class JointMod(pg.ModellingBase):
         rholoa = self.ERTlo.fop.response(rholo)
         rhohia = self.ERThi.fop.response(rhohi)
 
-        return pg.cat(t, rholoa, rhohia)
+        return pg.cat(t, pg.cat(rholoa, rhohia))
