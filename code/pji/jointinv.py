@@ -15,9 +15,11 @@ class JointInv(LSQRInversion):
         self.trans = pg.RTrans()
         self.dcumtrans = pg.RTransCumulative()
         self.dcumtrans.add(self.trans,
-                           self.forwardOperator().RST.dataContainer.size())
+                           self.forwardOperator().SRT.dataContainer.size())
         self.dcumtrans.add(self.logtrans,
-                           self.forwardOperator().ERT.data.size())
+                           self.forwardOperator().ERTlo.data.size())
+        self.dcumtrans.add(self.logtrans,
+                           self.forwardOperator().ERThi.data.size())
         self.setTransData(self.dcumtrans)
 
         # Set model transformation
