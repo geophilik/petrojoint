@@ -49,9 +49,9 @@ class JointMod(pg.ModellingBase):
         return np.reshape(model, (4, self.cellCount))
 
     def createJacobian(self, model):
-        print('*' * 30)
-        print('here')
-        print('*' * 30)
+        #~ print('*' * 30)
+        #~ print('here')
+        #~ print('*' * 30)
         fw, fa, cec, fr = self.fractions(model)
         
         # ~ print(fw, fa, cec, fr)
@@ -63,17 +63,17 @@ class JointMod(pg.ModellingBase):
         # ~ print(rholo, rhohi, s)
 
         self.ERTlo.fop.createJacobian(rholo)
-        print('*' * 30)
-        print('ERTlo done')
-        print('*' * 30)
+        #~ print('*' * 30)
+        #~ print('ERTlo done')
+        #~ print('*' * 30)
         self.ERThi.fop.createJacobian(rhohi)
-        print('*' * 30)
-        print('ERThi done')
-        print('*' * 30)
+        #~ print('*' * 30)
+        #~ print('ERThi done')
+        #~ print('*' * 30)
         self.SRT.fop.createJacobian(s)
-        print('*' * 30)
-        print('SRT done')
-        print('*' * 30)
+        #~ print('*' * 30)
+        #~ print('SRT done')
+        #~ print('*' * 30)
         
         jacERTlo = self.ERTlo.fop.jacobian()
         jacERThi = self.ERThi.fop.jacobian()
@@ -121,9 +121,9 @@ class JointMod(pg.ModellingBase):
         self.jac.addMatrix(self.jacERThiC, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
         
-        print('*' * 30)
-        print('and then here')
-        print('*' * 30)
+        #~ print('*' * 30)
+        #~ print('and then here')
+        #~ print('*' * 30)
         
         self.setJacobian(self.jac)
 

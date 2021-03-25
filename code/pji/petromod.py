@@ -135,9 +135,25 @@ class PPMod():
             phi = fw + fa
         else:
             phi = 1 - fr
-            
+        
+        #~ print('+' * 30)
+        #~ print(fw.mean())
+        #~ print('+' * 30)
+        #~ print('+' * 30)
+        #~ print(fa.mean())
+        #~ print('+' * 30)
+        #~ print('+' * 30)
+        #~ print(cec.mean())
+        #~ print('+' * 30)
+        #~ print('+' * 30)
+        #~ print(fr.mean())
+        #~ print('+' * 30)
         rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
                 fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+        
+        #~ print('+' * 30)
+        #~ print(rho.mean())
+        #~ print('+' * 30)
         
         if (rho <= 0).any():
             pg.warn(

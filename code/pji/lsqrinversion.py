@@ -49,9 +49,9 @@ class LSQRInversion(pg.RInversion):
         return self.model()
 
     def oneStep(self):
-        print("#" * 30)
-        print('one step')
-        print("#" * 30)
+        #~ print("#" * 30)
+        #~ print('one step')
+        #~ print("#" * 30)
         """One inversion step."""
         model = self.model()
         if len(self.response()) != len(self.data()):
@@ -72,9 +72,11 @@ class LSQRInversion(pg.RInversion):
         self.leftJ = tD.deriv(self.response()) * self.dScale
         #        self.leftJ = self.dScale / tD.deriv(self.response())
         self.rightJ = 1.0 / tM.deriv(model)
-        print("J",J.cols(), J.rows())
-        print("leftJ",len(self.leftJ))
-        print("rightJ",len(self.rightJ))
+        #~ print("#" * 30)
+        #~ print("J",J.cols(), J.rows())
+        #~ print("leftJ",len(self.leftJ))
+        #~ print("rightJ",len(self.rightJ))
+        #~ print("#" * 30)
         self.JJ = pg.matrix.MultLeftRightMatrix(J, self.leftJ, self.rightJ)
         #        self.A.addMatrix(self.JJ, 0, 0)
         self.mat1 = self.A.addMatrix(self.JJ)
@@ -90,6 +92,9 @@ class LSQRInversion(pg.RInversion):
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         # % part 3: parameter constraints
+        #~ print("#" * 30)
+        #~ print('parameter constraints')
+        #~ print("#" * 30)
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model)
             self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
@@ -97,8 +102,14 @@ class LSQRInversion(pg.RInversion):
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
         self.A.recalcMatrixSize()
+        #~ print("#" * 30)
+        #~ print('parameter constraints: done')
+        #~ print("#" * 30)
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
+        #~ print("#" * 30)
+        #~ print(deltaD)
+        #~ print("#" * 30)
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)
