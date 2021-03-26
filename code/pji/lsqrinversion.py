@@ -49,9 +49,6 @@ class LSQRInversion(pg.RInversion):
         return self.model()
 
     def oneStep(self):
-        #~ print("#" * 30)
-        #~ print('one step')
-        #~ print("#" * 30)
         """One inversion step."""
         model = self.model()
         if len(self.response()) != len(self.data()):
@@ -92,24 +89,16 @@ class LSQRInversion(pg.RInversion):
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         # % part 3: parameter constraints
-        #~ print("#" * 30)
-        #~ print('parameter constraints')
-        #~ print("#" * 30)
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model)
+            self.rightG[self.fop.cellCount*2:self.fop.cellCount*3] = 1
             self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
             self.mat3 = self.A.addMatrix(self.GG)
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
         self.A.recalcMatrixSize()
-        #~ print("#" * 30)
-        #~ print('parameter constraints: done')
-        #~ print("#" * 30)
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
-        #~ print("#" * 30)
-        #~ print(deltaD)
-        #~ print("#" * 30)
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)

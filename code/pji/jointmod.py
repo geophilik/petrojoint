@@ -210,8 +210,8 @@ class JointMod(pg.ModellingBase):
 
         fig, axs = plt.subplots(2, 3, figsize=(10, 10))
         t_resp = resp[:self.SRT.dataContainer.size()]
-        rholoa_resp = resp[self.SRT.dataContainer.size():]
-        rhohia_resp = resp[self.SRT.dataContainer.size():]
+        rholoa_resp = resp[self.SRT.dataContainer.size():self.SRT.dataContainer.size()+self.ERTlo.data.size()]
+        rhohia_resp = resp[self.SRT.dataContainer.size() + self.ERTlo.data.size():]
         self.SRT.showData(response=t_resp, ax=axs[0, 0])
 
         t_fit = t_resp - self.SRT.dataContainer("t")
