@@ -82,7 +82,19 @@ class PPMod():
         fw[np.isclose(fw, 0)] = 0
         return fw
 
-    def cec(self, rholo, rhohi, fw):
+    # ~ def cec(self, rholo, rhohi, fw):
+        # ~ sigmahi = 1. / rhohi
+        # ~ sigmalo = 1. / rholo
+        
+        # ~ mn = sigmahi - sigmalo
+        # ~ # mn[mn < 0] = 0
+        
+        # ~ # cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
+        # ~ cec = self.phi**(self.n - self.m) * mn / (fw**(self.n-1) * self.rhog * self.l)
+        
+        # ~ return cec
+
+    def cec(self, rholo, rhohi):
         sigmahi = 1. / rhohi
         sigmalo = 1. / rholo
         
@@ -90,7 +102,7 @@ class PPMod():
         # ~ mn[mn < 0] = 0
         
         # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
-        cec = self.phi**(self.n - self.m) * mn / (fw**(self.n-1) * self.rhog * self.l)
+        cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
         
         return cec
 
@@ -281,7 +293,7 @@ class PPMod():
 
         fa = self.air(rholo, rhohi, v)
         fw = self.water(rholo, rhohi)
-        cec = self.cec(rholo, rhohi, fw)
+        cec = self.cec(rholo, rhohi)
 
         # Check that fractions are between 0 and 1
         array_mask = np.array(((fa < 0) | (fa > 1 - self.fr))
