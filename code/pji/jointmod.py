@@ -237,16 +237,16 @@ class JointMod(pg.ModellingBase):
 
     def ERTlochi2(self, model, error):  # chi2 and relative rms for the rhoa data
         resp = self.response(model)
-        resprholoa = resp[self.SRT.dataContainer.size():]
-        rholoaerr = error[self.SRT.dataContainer.size():]
+        resprholoa = resp[self.SRT.dataContainer.size():self.ERTlo.dataContainer.size()]
+        rholoaerr = error[self.SRT.dataContainer.size():self.ERTlo.dataContainer.size()]
         chi2rholoa = pg.utils.chi2(self.ERTlo.data("rhoa"), resprholoa, rholoaerr)
         rmsrholoa = pg.rrms(self.ERTlo.data("rhoa"), resprholoa)
         return chi2rholoa, rmsrholoa
 
     def ERThichi2(self, model, error):  # chi2 and relative rms for the rhoa data
         resp = self.response(model)
-        resprhohia = resp[self.SRT.dataContainer.size():]
-        rhohiaerr = error[self.SRT.dataContainer.size():]
+        resprhohia = resp[self.SRT.dataContainer.size() + self.ERTlo.dataContainer.size():]
+        rhohiaerr = error[self.SRT.dataContainer.size() + self.ERTlo.dataContainer.size():]
         chi2rhohia = pg.utils.chi2(self.ERThi.data("rhoa"), resprhohia, rhohiaerr)
         rmsrhohia = pg.rrms(self.ERThi.data("rhoa"), resprhohia)
         return chi2rhohia, rmsrhohia
