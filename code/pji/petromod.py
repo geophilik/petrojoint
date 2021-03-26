@@ -193,8 +193,8 @@ class PPMod():
         else:
             phi = 1 - fr
             
-        return (fw / phi)**n * phi**m * (1 / self.rhow) + \
-               (fw / phi)**(n-1) * (phi**m / phi) * self.rhog * self.B * cec
+        return (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
+               (fw / phi)**(self.n-1) * (phi**self.m / phi) * self.rhog * self.B * cec
     
     def rholo(self, fw, fa, cec, fr=None):
         """Return low frequency electrical resistivity based on 
@@ -213,8 +213,8 @@ class PPMod():
         else:
             phi = 1 - fr
 
-        return (fw / phi)**n * phi**m * (1 / self.rhow) + \
-               (fw / phi)**(n-1) * (phi**m / phi) * self.rhog * (self.B - self.l) * cec
+        return (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
+               (fw / phi)**(self.n-1) * (phi**self.m / phi) * self.rhog * (self.B - self.l) * cec
     
     # ~ def rho_deriv_fw(self, fw, fa, fr):
         # ~ return self.rho(fw, fa, fr) * -self.n / fw
