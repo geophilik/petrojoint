@@ -90,10 +90,10 @@ class LSQRInversion(pg.RInversion):
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         # % part 3: parameter constraints
         if self.G is not None:
-            # ~ self.rightG = 1.0 / tM.deriv(model)
-            tmp = 1.0 / tM.deriv(model)
-            tmp[self.fop().cellCount*2:self.fop().cellCount*3] = 1.
-            self.rightG = tmp
+            self.rightG = 1.0 / tM.deriv(model)
+            # ~ tmp = 1.0 / tM.deriv(model)
+            # ~ tmp[self.fop().cellCount*2:self.fop().cellCount*3] = 1.
+            # ~ self.rightG = tmp
             # ~ print(self.rightG[self.fop().cellCount*2:self.fop().cellCount*3])
             self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
             self.mat3 = self.A.addMatrix(self.GG)
