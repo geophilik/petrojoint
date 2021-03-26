@@ -77,7 +77,7 @@ class PPMod():
         
         # ~ fw = (self.rhow * self.phi**self.n / self.phi**self.m * \
               # ~ (sigmahi - (mn) / self.R))**(1. / self.n)
-        fw = (self.rhow * self.phi**(self.n-self.m) * \
+        fw = (self.rhow * (self.phi**(self.n) / self.phi**(self.m)) * \
               (sigmahi - mn / self.R))**(1. / self.n)
         fw[np.isclose(fw, 0)] = 0
         return fw
@@ -90,7 +90,7 @@ class PPMod():
         # ~ mn[mn < 0] = 0
         
         # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
-        cec = self.phi**(self.n - self.m - 2) * mn / (fw**(self.n-1) * self.rhog * self.l)
+        cec = self.phi**(self.n - self.m) * mn / (fw**(self.n-1) * self.rhog * self.l)
         
         return cec
 
