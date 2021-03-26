@@ -92,7 +92,7 @@ class LSQRInversion(pg.RInversion):
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model)
             # ~ print(self.fop)
-            self.rightG[self.fop().cellCount*2:self.fop().cellCount*3] = 1
+            print(self.rightG[self.fop().cellCount*2:self.fop().cellCount*3])
             self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
             self.mat3 = self.A.addMatrix(self.GG)
             nConst = self.C.rows()
