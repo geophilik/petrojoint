@@ -130,89 +130,91 @@ class PPMod():
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
 
-    def rholo(self, fw, fa, cec, fr=None):
-        if fr is None:
-            phi = fw + fa
-        else:
-            phi = 1 - fr
+    # ~ def rholo(self, fw, fa, cec, fr=None):
+        # ~ if fr is None:
+            # ~ phi = fw + fa
+        # ~ else:
+            # ~ phi = 1 - fr
         
-        #~ print('+' * 30)
-        #~ print(fw.mean())
-        #~ print('+' * 30)
-        #~ print('+' * 30)
-        #~ print(fa.mean())
-        #~ print('+' * 30)
-        #~ print('+' * 30)
-        #~ print(cec.mean())
-        #~ print('+' * 30)
-        #~ print('+' * 30)
-        #~ print(fr.mean())
-        #~ print('+' * 30)
-        rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
-                fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+        # ~ #~ print('+' * 30)
+        # ~ #~ print(fw.mean())
+        # ~ #~ print('+' * 30)
+        # ~ #~ print('+' * 30)
+        # ~ #~ print(fa.mean())
+        # ~ #~ print('+' * 30)
+        # ~ #~ print('+' * 30)
+        # ~ #~ print(cec.mean())
+        # ~ #~ print('+' * 30)
+        # ~ #~ print('+' * 30)
+        # ~ #~ print(fr.mean())
+        # ~ #~ print('+' * 30)
+        # ~ rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
+                # ~ fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
         
-        #~ print('+' * 30)
-        #~ print(rho.mean())
-        #~ print('+' * 30)
+        # ~ #~ print('+' * 30)
+        # ~ #~ print(rho.mean())
+        # ~ #~ print('+' * 30)
         
+        # ~ if (rho <= 0).any():
+            # ~ pg.warn(
+                # ~ "Found negative resistivity, setting to nearest above zero.")
+            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
+        # ~ return rho
+
+    # ~ def rhohi(self, fw, fa, cec, fr=None):
+        # ~ if fr is None:
+            # ~ phi = fw + fa
+        # ~ else:
+            # ~ phi = 1 - fr
+            
+        # ~ rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
+                # ~ fw**(self.n-1) * self.rhog * self.B * cec)
+        
+        # ~ if (rho <= 0).any():
+            # ~ pg.warn(
+                # ~ "Found negative resistivity, setting to nearest above zero.")
+            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
+        # ~ return rho
+
+    def rhohi(self, fw, fa, cec, fr=None):
+        """Return high frequency electrical resistivity based on 
+        fraction of water `fw` and cation exchange capacity `CEC`."""
+
+        rho = 1. / self.sigmahi(fw, fa, cec, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
-
-    def rhohi(self, fw, fa, cec, fr=None):
+    
+    def sigmahi(self, fw, fa, cec, fr):
         if fr is None:
             phi = fw + fa
         else:
             phi = 1 - fr
             
-        rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
-                fw**(self.n-1) * self.rhog * self.B * cec)
-        
+        return (fw / phi)**n * phi**m * (1 / self.rhow) + \
+               (fw / phi)**(n-1) * (phi**m / phi) * self.rhog * self.B * cec
+    
+    def rholo(self, fw, fa, cec, fr=None):
+        """Return low frequency electrical resistivity based on 
+        fraction of water `fw` and cation exchange capacity `CEC`."""
+
+        rho = 1. / self.sigmalo(fw, fa, cec, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
-
-    # ~ def rhohi(self, fw, fa, cec, fr=None):
-        # ~ """Return high frequency electrical resistivity based on 
-        # ~ fraction of water `fw` and cation exchange capacity `CEC`."""
-        # ~ if fr is None:
-            # ~ phi = fw + fa
-        # ~ else:
-            # ~ phi = 1 - fr
-
-        # ~ rho = 1. / self.sigmahi(fw, fa, cec, fr)
-        # ~ if (rho <= 0).any():
-            # ~ pg.warn(
-                # ~ "Found negative resistivity, setting to nearest above zero.")
-            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
-        # ~ return rho
     
-    # ~ def sigmahi(self, fw, fa, cec, fr):
-        # ~ return (fw / phi)**n * (phi)**m * (1 / self.rhow) + \
-               # ~ (fw / phi)**(n-1) * (phi)**(m-1) * self.rhog * self.B * cec
-    
-    # ~ def rholo(self, fw, fa, cec, fr=None):
-        # ~ """Return low frequency electrical resistivity based on 
-        # ~ fraction of water `fw` and cation exchange capacity `CEC`."""
-        # ~ if fr is None:
-            # ~ phi = fw + fa
-        # ~ else:
-            # ~ phi = 1 - fr
+    def sigmalo(self, fw, fa, cec, fr):
+        if fr is None:
+            phi = fw + fa
+        else:
+            phi = 1 - fr
 
-        # ~ rho = 1. / self.sigmalo(fw, fa, cec, fr)
-        # ~ if (rho <= 0).any():
-            # ~ pg.warn(
-                # ~ "Found negative resistivity, setting to nearest above zero.")
-            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
-        # ~ return rho
-    
-    # ~ def sigmalo(self, fw, fa, cec, fr):
-        # ~ return (fw / phi)**n * (phi)**m * (1 / self.rhow) + \
-               # ~ (fw / phi)**(n-1) * (phi)**(m-1) * self.rhog * (self.B - self.l) * cec
+        return (fw / phi)**n * phi**m * (1 / self.rhow) + \
+               (fw / phi)**(n-1) * (phi**m / phi) * self.rhog * (self.B - self.l) * cec
     
     # ~ def rho_deriv_fw(self, fw, fa, fr):
         # ~ return self.rho(fw, fa, fr) * -self.n / fw
