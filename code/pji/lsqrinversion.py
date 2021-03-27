@@ -51,6 +51,10 @@ class LSQRInversion(pg.RInversion):
     def oneStep(self):
         """One inversion step."""
         model = self.model()
+        print('#' * 30)
+        print('begin of oneStep()')
+        print(model)
+        print('#' * 30)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
 
@@ -110,7 +114,7 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        dM = pg.cat(dM, np.zeros(self.fop().cellCount))
+        dM = pg.cat(dM, np.ones(self.fop().cellCount))
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
@@ -124,6 +128,10 @@ class LSQRInversion(pg.RInversion):
 
         # ~ self.setModel(tM.update(self.model(), dM * tau))
         self.setModel(tM.update(model, dM * tau))
+        print('#' * 30)
+        print('after update')
+        print(model)
+        print('#' * 30)        
         # print("model", min(self.model()), max(self.model()))
         if tau == 1.0:
             self.setResponse(responseLS)
