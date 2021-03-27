@@ -133,8 +133,8 @@ class LSQRInversion(pg.RInversion):
 
         # ~ self.setModel(tM.update(self.model(), dM * tau))
         umodel = tM.update(model, dM * tau)
-        umodel[self.fop().cellCount * 3:] = model[self.fop().cellCount * 3:]
-        self.setModel()
+        umodel = pg.cat(umodel[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
+        self.setModel(umodel)
         # ~ self.setModel(tM.update(model, dM * tau))
         print('#' * 30)
         print('after update')
@@ -158,7 +158,7 @@ class LSQRInversion(pg.RInversion):
         print(model)
         print(dM)
         modelLS = tM.update(model, dM)
-        modelLS[self.fop().cellCount * 3:] = model[self.fop().cellCount * 3:]
+        modelLS = pg.cat(modelLS[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
