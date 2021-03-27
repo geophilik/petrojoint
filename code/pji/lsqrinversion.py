@@ -52,7 +52,7 @@ class LSQRInversion(pg.RInversion):
         """One inversion step."""
         model = self.model()
         print("#" * 30)
-        print(model)
+        print(self.model())
         print("#" * 30)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
@@ -92,7 +92,7 @@ class LSQRInversion(pg.RInversion):
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         print("#" * 30)
-        print(model)
+        print(self.model())
         print("#" * 30)
         # % part 3: parameter constraints
         if self.G is not None:
@@ -107,7 +107,7 @@ class LSQRInversion(pg.RInversion):
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
         self.A.recalcMatrixSize()
         print("#" * 30)
-        print(model)
+        print(self.model())
         print("#" * 30)
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
@@ -121,7 +121,7 @@ class LSQRInversion(pg.RInversion):
         dM = lsqr(self.A, rhs)
         # ~ dM = pg.cat(dM, np.zeros(self.fop().cellCount))
         print("#" * 30)
-        print(model)
+        print(self.model())
         print("#" * 30)
         tau, responseLS = self.lineSearchInter(dM)
         if tau < 0.1:  # did not work out
@@ -147,7 +147,7 @@ class LSQRInversion(pg.RInversion):
     def lineSearchInter(self, dM, nTau=100):
         """Optimizes line search parameter by linear respones interpolation."""
         print("#" * 30)
-        print(model)
+        print(self.model())
         print("#" * 30)
         tD = self.transData()
         tM = self.transModel()
