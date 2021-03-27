@@ -114,7 +114,7 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[-self.fop().cellCount])
+        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:])
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
