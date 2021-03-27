@@ -117,7 +117,8 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:] * -1)
+        # ~ dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:] * -1)
+        dM = pg.cat(dM, np.ones(self.fop().cellCount))
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
@@ -131,7 +132,10 @@ class LSQRInversion(pg.RInversion):
             tau = 0.1  # try a small value
 
         # ~ self.setModel(tM.update(self.model(), dM * tau))
-        self.setModel(tM.update(model, dM * tau))
+        umodel = tM.update(model, dM * tau)
+        umodel[self.fop().cellCount * 3:] = model[self.fop().cellCount * 3:]
+        self.setModel()
+        # ~ self.setModel(tM.update(model, dM * tau))
         print('#' * 30)
         print('after update')
         print(self.model())
@@ -146,7 +150,7 @@ class LSQRInversion(pg.RInversion):
         return True
 
     def lineSearchInter(self, dM, model, nTau=100):
-        """Optimizes line search parameter by linear respones interpolation."""
+        """Optimizes line search parameter by linear response interpolation."""
         tD = self.transData()
         tM = self.transModel()
         # ~ model = self.model()
@@ -154,6 +158,7 @@ class LSQRInversion(pg.RInversion):
         print(model)
         print(dM)
         modelLS = tM.update(model, dM)
+        modelLS[self.fop().cellCount * 3:] = model[self.fop().cellCount * 3:]
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
