@@ -52,7 +52,8 @@ class JointInv(LSQRInversion):
         fop = self.forwardOperator()
         fop.createConstraints()  # Important!
         ones = pg.RVector(fop._I.rows(), 1.0)
-        phiVec = pg.cat(ones, startmodel)
+        # ~ phiVec = pg.cat(ones, startmodel)
+        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 3])
         print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)
