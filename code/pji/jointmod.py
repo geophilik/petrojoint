@@ -170,7 +170,8 @@ class JointMod(pg.ModellingBase):
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
-        phases = ["water", "air", "cec", "rock matrix"]
+        # ~ phases = ["water", "air", "cec", "rock matrix"]
+        phases = ["water", "air", "rock matrix"]
         for i, phase in enumerate([self.fix_water, self.fix_air,# self.fix_cec,
                                    self.fix_poro]):
             name = phases[i]

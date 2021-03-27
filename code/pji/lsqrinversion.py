@@ -51,9 +51,6 @@ class LSQRInversion(pg.RInversion):
     def oneStep(self):
         """One inversion step."""
         model = self.model()
-        print("#" * 30)
-        print(self.model())
-        print("#" * 30)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
 
@@ -72,11 +69,11 @@ class LSQRInversion(pg.RInversion):
         self.leftJ = tD.deriv(self.response()) * self.dScale
         #        self.leftJ = self.dScale / tD.deriv(self.response())
         self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 3])
-        print("#" * 30)
-        print("J",J.cols(), J.rows())
-        print("leftJ",len(self.leftJ))
-        print("rightJ",len(self.rightJ))
-        print("#" * 30)
+        # ~ print("#" * 30)
+        # ~ print("J",J.cols(), J.rows())
+        # ~ print("leftJ",len(self.leftJ))
+        # ~ print("rightJ",len(self.rightJ))
+        # ~ print("#" * 30)
         self.JJ = pg.matrix.MultLeftRightMatrix(J, self.leftJ, self.rightJ)
         #        self.A.addMatrix(self.JJ, 0, 0)
         self.mat1 = self.A.addMatrix(self.JJ)
@@ -91,9 +88,6 @@ class LSQRInversion(pg.RInversion):
         self.mat2 = self.A.addMatrix(self.CC)
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
-        print("#" * 30)
-        print(self.model())
-        print("#" * 30)
         # % part 3: parameter constraints
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model[:self.fop().cellCount * 3])
@@ -106,9 +100,6 @@ class LSQRInversion(pg.RInversion):
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
         self.A.recalcMatrixSize()
-        print("#" * 30)
-        print(self.model())
-        print("#" * 30)
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
         deltaC = -(self.CC * tM.fwd(model[:self.fop().cellCount * 3]) * sqrt(lam))
@@ -119,10 +110,7 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        # ~ dM = pg.cat(dM, np.zeros(self.fop().cellCount))
-        print("#" * 30)
-        print(self.model())
-        print("#" * 30)
+        dM = pg.cat(dM, np.zeros(self.fop().cellCount))
         tau, responseLS = self.lineSearchInter(dM)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
@@ -134,7 +122,8 @@ class LSQRInversion(pg.RInversion):
         if tau < 0.1:  # still not working
             tau = 0.1  # tra a small value
 
-        self.setModel(tM.update(self.model()[:self.fop().cellCount * 3], dM * tau))
+        # ~ self.setModel(tM.update(self.model(), dM * tau))
+        self.setModel(tM.update(model, dM * tau))
         # print("model", min(self.model()), max(self.model()))
         if tau == 1.0:
             self.setResponse(responseLS)
@@ -144,14 +133,11 @@ class LSQRInversion(pg.RInversion):
         self.setLambda(self.getLambda() * self.lambdaFactor())
         return True
 
-    def lineSearchInter(self, dM, nTau=100):
+    def lineSearchInter(self, dM, model, nTau=100):
         """Optimizes line search parameter by linear respones interpolation."""
-        print("#" * 30)
-        print(self.model())
-        print("#" * 30)
         tD = self.transData()
         tM = self.transModel()
-        model = self.model()
+        # ~ model = self.model()
         response = self.response()
         # ~ print(model)
         # ~ print(dM)
