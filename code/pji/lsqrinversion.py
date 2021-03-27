@@ -114,7 +114,7 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        dM = pg.cat(dM, np.ones(self.fop().cellCount))
+        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[-self.fop().cellCount])
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
@@ -157,7 +157,7 @@ class LSQRInversion(pg.RInversion):
         print(modelLS)
         print(responseLS)
         print('#' * 30)
-        phi[-1] = self.getPhi(modelLS[:self.fop().cellCount], responseLS)
+        phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
         for i in range(1, len(taus) - 1):
