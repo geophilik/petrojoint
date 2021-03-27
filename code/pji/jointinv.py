@@ -27,7 +27,8 @@ class JointInv(LSQRInversion):
         self.mcumtrans = pg.TransCumulative()
         self.transforms = []
         phase_limits = [[fwmin, fwmax], [famin, famax],
-                        [0, 1e5], [frmin, frmax]]
+                        # ~ [0, 1e5], [frmin, frmax]]
+                        [frmin, frmax]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:
                 lower = 0.001
@@ -52,5 +53,6 @@ class JointInv(LSQRInversion):
         fop.createConstraints()  # Important!
         ones = pg.RVector(fop._I.rows(), 1.0)
         phiVec = pg.cat(ones, startmodel)
+        print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)
