@@ -90,7 +90,7 @@ class LSQRInversion(pg.RInversion):
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         # % part 3: parameter constraints
         if self.G is not None:
-            self.rightG = 1.0 / tM.deriv(model)
+            self.rightG = 1.0 / tM.deriv(model[:self.fop().cellCount * 3])
             # ~ tmp = 1.0 / tM.deriv(model)
             # ~ tmp[self.fop().cellCount*2:self.fop().cellCount*3] = 1.
             # ~ self.rightG = tmp
@@ -102,7 +102,7 @@ class LSQRInversion(pg.RInversion):
         self.A.recalcMatrixSize()
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
-        deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
+        deltaC = -(self.CC * tM.fwd(model[:self.fop().cellCount * 3]) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
