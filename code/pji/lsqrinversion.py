@@ -143,6 +143,9 @@ class LSQRInversion(pg.RInversion):
 
     def lineSearchInter(self, dM, model, nTau=100):
         """Optimizes line search parameter by linear respones interpolation."""
+        print('#' * 30)
+        print(model)
+        print('#' * 30)
         tD = self.transData()
         tM = self.transModel()
         # ~ model = self.model()
@@ -150,7 +153,15 @@ class LSQRInversion(pg.RInversion):
         # ~ print(model)
         # ~ print(dM)
         modelLS = tM.update(model, dM)
+        print('#' * 30)
+        print('modelLS')
+        print(model)
+        print('#' * 30)  
         responseLS = self.forwardOperator().response(modelLS)
+        print('#' * 30)
+        print('responseLS')
+        print(model)
+        print('#' * 30)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
         phi[-1] = self.getPhi(modelLS, responseLS)
