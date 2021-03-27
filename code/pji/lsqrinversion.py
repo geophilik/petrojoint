@@ -106,7 +106,7 @@ class LSQRInversion(pg.RInversion):
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
-            deltaG = (self.c - self.G * model) * sqrt(self.my)
+            deltaG = (self.c - self.G * model[:self.fop().cellCount * 3]) * sqrt(self.my)
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
@@ -121,7 +121,7 @@ class LSQRInversion(pg.RInversion):
         if tau < 0.1:  # still not working
             tau = 0.1  # tra a small value
 
-        self.setModel(tM.update(self.model(), dM * tau))
+        self.setModel(tM.update(self.model()[:self.fop().cellCount * 3], dM * tau))
         # print("model", min(self.model()), max(self.model()))
         if tau == 1.0:
             self.setResponse(responseLS)
