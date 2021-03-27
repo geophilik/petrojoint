@@ -106,10 +106,11 @@ class LSQRInversion(pg.RInversion):
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
-            deltaG = (self.c - self.G * model) * sqrt(self.my)
+            deltaG = (self.c - self.G * model[:self.fop().cellCount * 3]) * sqrt(self.my)
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
+        print(dM)
         tau, responseLS = self.lineSearchInter(dM)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
