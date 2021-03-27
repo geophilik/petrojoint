@@ -121,10 +121,11 @@ class LSQRInversion(pg.RInversion):
         if tau > 0.9:  # save time and take 1
             tau = 1.0
         else:
-            self.forwardOperator().response(self.model())
+            # ~ self.forwardOperator().response(self.model())
+            self.forwardOperator().response(model)
 
         if tau < 0.1:  # still not working
-            tau = 0.1  # tra a small value
+            tau = 0.1  # try a small value
 
         # ~ self.setModel(tM.update(self.model(), dM * tau))
         self.setModel(tM.update(model, dM * tau))
@@ -153,10 +154,10 @@ class LSQRInversion(pg.RInversion):
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
-        # ~ print('#' * 30)
-        # ~ print(modelLS)
+        print('#' * 30)
+        print(modelLS)
         # ~ print(responseLS)
-        # ~ print('#' * 30)
+        print('#' * 30)
         phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
