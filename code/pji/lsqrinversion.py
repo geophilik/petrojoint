@@ -51,6 +51,7 @@ class LSQRInversion(pg.RInversion):
     def oneStep(self):
         """One inversion step."""
         model = self.model()
+        print(model)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
 
@@ -138,8 +139,8 @@ class LSQRInversion(pg.RInversion):
         tM = self.transModel()
         model = self.model()
         response = self.response()
-        print(model)
-        print(dM)
+        # ~ print(model)
+        # ~ print(dM)
         modelLS = tM.update(model, dM)
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
