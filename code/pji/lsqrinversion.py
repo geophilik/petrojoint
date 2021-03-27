@@ -157,7 +157,7 @@ class LSQRInversion(pg.RInversion):
         print(modelLS)
         print(responseLS)
         print('#' * 30)
-        phi[-1] = self.getPhi(modelLS, responseLS)
+        phi[-1] = self.getPhi(modelLS[:self.fop().cellCount], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
         for i in range(1, len(taus) - 1):
