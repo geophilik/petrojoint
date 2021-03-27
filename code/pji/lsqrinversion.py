@@ -35,7 +35,10 @@ class LSQRInversion(pg.RInversion):
             if self.chi2() <= 1.0:
                 print("Done. Reached target data misfit of chi^2 <= 1.")
                 break
-            phi = self.getPhi()
+            # ~ phi = self.getPhi()
+            model = self.model()
+            phi = self.getPhi(model[:self.fop().cellCount * 3],
+                              self.fop().response(model))
             if i > 2:
                 print("Phi / oldphi", phi / oldphi)
             if (i > 10) and (phi / oldphi >
@@ -154,10 +157,10 @@ class LSQRInversion(pg.RInversion):
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
-        # ~ print('#' * 30)
-        # ~ print(modelLS)
+        print('#' * 30)
+        print(modelLS)
         # ~ print(responseLS)
-        # ~ print('#' * 30)
+        print('#' * 30)
         phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
