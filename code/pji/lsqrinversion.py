@@ -114,7 +114,7 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:])
+        dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:] * -1)
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
@@ -147,16 +147,16 @@ class LSQRInversion(pg.RInversion):
         tM = self.transModel()
         # ~ model = self.model()
         response = self.response()
-        print(model)
-        print(dM)
+        # ~ print(model)
+        # ~ print(dM)
         modelLS = tM.update(model, dM)
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
-        print('#' * 30)
-        print(modelLS)
-        print(responseLS)
-        print('#' * 30)
+        # ~ print('#' * 30)
+        # ~ print(modelLS)
+        # ~ print(responseLS)
+        # ~ print('#' * 30)
         phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
@@ -164,7 +164,7 @@ class LSQRInversion(pg.RInversion):
             tau = taus[i]
             modelI = tM.update(model, dM * tau)
             responseI = tD.inv(t1 * tau + t0 * (1.0 - tau))
-            phi[i] = self.getPhi(modelI, responseI)
+            phi[i] = self.getPhi(modelI[:self.fop().cellCount * 3], responseI)
 
         return taus[np.argmin(phi)], responseLS
 
