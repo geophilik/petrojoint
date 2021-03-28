@@ -233,27 +233,51 @@ class PPMod():
     # ~ def rho_deriv_fw(self, fw, fa, fr):
         # ~ return self.rho(fw, fa, fr) * -self.n / fw
     
+    # ~ def rholo_deriv_fw(self, fw, fa, cec, fr):
+        # ~ return self.rholo(fw, fa, cec, fr) * \
+            # ~ (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * (self.B - self.l) * cec) / \
+            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+    
+    # ~ def rhohi_deriv_fw(self, fw, fa, cec, fr):
+        # ~ return self.rhohi(fw, fa, cec, fr) * \
+            # ~ (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * self.B * cec) / \
+            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * self.B * cec)
+    
     def rholo_deriv_fw(self, fw, fa, cec, fr):
-        return self.rholo(fw, fa, cec, fr) * \
-            (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * (self.B - self.l) * cec) / \
-            (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhog) - \
+            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec)) / \
+            self.sigmahi(fw, fa, cec, fr)**2
     
     def rhohi_deriv_fw(self, fw, fa, cec, fr):
-        return self.rhohi(fw, fa, cec, fr) * \
-            (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * self.B * cec) / \
-            (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * self.B * cec)
+        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhog) - \
+            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec)) / \
+            self.sigmahi(fw, fa, cec, fr)**2
 
     # ~ def rho_deriv_fr(self, fw, fa, fr):
         # ~ return self.rho(fw, fa, fr) * (self.n - self.m) / (fr - 1)
 
+    # ~ def rholo_deriv_fr(self, fw, fa, cec, fr):
+        # ~ return self.rholo(fw, fa, cec, fr) * \
+            # ~ (self.m - self.n) / (1 - fr)
+
+    # ~ def rhohi_deriv_fr(self, fw, fa, cec, fr):
+        # ~ return self.rhohi(fw, fa, cec, fr) * \
+            # ~ (self.m - self.n) / (1 - fr)
+
     def rholo_deriv_fr(self, fw, fa, cec, fr):
-        return self.rholo(fw, fa, cec, fr) * \
-            (self.m - self.n) / (1 - fr)
+        return ((1/(1-fr)) * (-(1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec - \
+            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec + \
+            self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) - \
+            self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
+            self.sigmahi(fw, fa, cec, fr)**2
 
     def rhohi_deriv_fr(self, fw, fa, cec, fr):
-        return self.rhohi(fw, fa, cec, fr) * \
-            (self.m - self.n) / (1 - fr)
-
+        return ((1/(1-fr)) * (-(1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec - \
+            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec + \
+            self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) - \
+            self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
+            self.sigmahi(fw, fa, cec, fr)**2
+        
     # ~ def rho_deriv_fa(self, fw, fa, fr):
         # ~ return 0
 
@@ -263,15 +287,15 @@ class PPMod():
     def rhohi_deriv_fa(self, fw, fa, cec, fr):
         return 0
 
-    def rholo_deriv_cec(self, fw, fa, cec, fr):
-        return self.rholo(fw, fa, cec, fr) * \
-            (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
-            (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+    # ~ def rholo_deriv_cec(self, fw, fa, cec, fr):
+        # ~ return self.rholo(fw, fa, cec, fr) * \
+            # ~ (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
+            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
 
-    def rhohi_deriv_cec(self, fw, fa, cec, fr):
-        return self.rhohi(fw, fa, cec, fr) * \
-            (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
-            (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
+    # ~ def rhohi_deriv_cec(self, fw, fa, cec, fr):
+        # ~ return self.rhohi(fw, fa, cec, fr) * \
+            # ~ (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
+            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
 
     def slowness(self, fw, fa, fr=None):
         """Return slowness based on fraction of water `fw` and air `fa`."""
