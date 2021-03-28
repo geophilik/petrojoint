@@ -263,7 +263,7 @@ class JointMod(pg.ModellingBase):
         rmstt = np.sqrt(np.mean((resptt - data)**2))
         return chi2tt, rmstt
 
-    def updateCEC(model):
+    def updateCEC(self, model):
         fw, fa, fr, cec = self.fractions(model)
         rholo = self.pm.rholo(fw, fa, cec, fr)
         rhohi = self.pm.rhohi(fw, fa, cec, fr)
