@@ -270,7 +270,7 @@ class JointMod(pg.ModellingBase):
         
         cec = self.pm.cec(rholo, rhohi)
         
-        return pg.cat(model[:cec.size() * 3], cec)
+        return pg.cat(model[:cec.size * 3], cec)
 
     def response(self, model):
         return self.response_mt(model)
