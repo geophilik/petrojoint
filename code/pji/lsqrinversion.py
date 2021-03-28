@@ -54,10 +54,14 @@ class LSQRInversion(pg.RInversion):
     def oneStep(self):
         """One inversion step."""
         model = self.model()
-        print('#' * 30)
-        print('begin of oneStep()')
-        print(model)
-        print('#' * 30)
+        
+        # update cec
+        model = self.fop().updateCEC(model)
+        
+        # ~ print('#' * 30)
+        # ~ print('begin of oneStep()')
+        # ~ print(model)
+        # ~ print('#' * 30)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
 
@@ -135,16 +139,16 @@ class LSQRInversion(pg.RInversion):
         umodel = tM.update(model, dM * tau)
         umodel = pg.cat(umodel[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
         
-        # update cec
-        umodel = self.fop().updateCEC(umodel)
+        # ~ # update cec
+        # ~ umodel = self.fop().updateCEC(umodel)
         
         # set updated model
         self.setModel(umodel)
         # ~ self.setModel(tM.update(model, dM * tau))
-        print('#' * 30)
-        print('after update')
-        print(self.model())
-        print('#' * 30)        
+        # ~ print('#' * 30)
+        # ~ print('after update')
+        # ~ print(self.model())
+        # ~ print('#' * 30)        
         # print("model", min(self.model()), max(self.model()))
         if tau == 1.0:
             self.setResponse(responseLS)
@@ -160,17 +164,17 @@ class LSQRInversion(pg.RInversion):
         tM = self.transModel()
         # ~ model = self.model()
         response = self.response()
-        print(model)
-        print(dM)
+        # ~ print(model)
+        # ~ print(dM)
         modelLS = tM.update(model, dM)
         modelLS = pg.cat(modelLS[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
-        print('#' * 30)
-        print(modelLS)
+        # ~ print('#' * 30)
+        # ~ print(modelLS)
         # ~ print(responseLS)
-        print('#' * 30)
+        # ~ print('#' * 30)
         phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
