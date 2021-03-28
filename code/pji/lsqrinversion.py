@@ -57,6 +57,7 @@ class LSQRInversion(pg.RInversion):
         
         # update cec
         model = self.fop().updateCEC(model)
+        self.setModel(model)
         
         # ~ print('#' * 30)
         # ~ print('begin of oneStep()')
