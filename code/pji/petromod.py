@@ -104,6 +104,8 @@ class PPMod():
         # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
         cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
         
+        cec[np.isclose(cec, 0)] = 0
+        
         return cec
 
     # ~ def air(self, rho, v):
