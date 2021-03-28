@@ -227,13 +227,13 @@ class JointMod(pg.ModellingBase):
         rholoa_fit = (self.ERTlo.data("rhoa") - rholoa_resp) / rholoa_resp * 100
         lim = np.max(np.abs(rholoa_fit))
         pb.show(self.ERTlo.data, ax=axs[0, 1], label=r"Measured data $\rho_a$")
-        pb.show(self.ERTlo.data, vals=rhoa_fit, cMin=-lim, cMax=lim,
+        pb.show(self.ERTlo.data, vals=rholoa_fit, cMin=-lim, cMax=lim,
                 label="Relative fit (%%)", cMap="RdBu_r", ax=axs[1, 1])
 
         rhohia_fit = (self.ERThi.data("rhoa") - rhohia_resp) / rhohia_resp * 100
         lim = np.max(np.abs(rhohia_fit))
         pb.show(self.ERThi.data, ax=axs[0, 2], label=r"Measured data $\rho_a$")
-        pb.show(self.ERThi.data, vals=rhoa_fit, cMin=-lim, cMax=lim,
+        pb.show(self.ERThi.data, vals=rhohia_fit, cMin=-lim, cMax=lim,
                 label="Relative fit (%%)", cMap="RdBu_r", ax=axs[1, 2])
         fig.show()
         return fig
@@ -262,6 +262,15 @@ class JointMod(pg.ModellingBase):
         chi2tt = pg.utils.chi2(data, resptt, tterr)
         rmstt = np.sqrt(np.mean((resptt - data)**2))
         return chi2tt, rmstt
+
+    def updateCEC(model):
+        fw, fa, fr, cec = self.fractions(model)
+        rholo = self.pm.rholo(fw, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fa, cec, fr)
+        
+        cec = self.pm.cec(rholo, rhohi)
+        
+        return pg.cat(model[:cec.size() * 3], cec)
 
     def response(self, model):
         return self.response_mt(model)

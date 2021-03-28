@@ -134,6 +134,11 @@ class LSQRInversion(pg.RInversion):
         # ~ self.setModel(tM.update(self.model(), dM * tau))
         umodel = tM.update(model, dM * tau)
         umodel = pg.cat(umodel[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
+        
+        # update cec
+        umodel = self.fop().updateCEC(umodel)
+        
+        # set updated model
         self.setModel(umodel)
         # ~ self.setModel(tM.update(model, dM * tau))
         print('#' * 30)
