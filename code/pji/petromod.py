@@ -73,6 +73,10 @@ class PPMod():
         sigmalo = 1. / rholo
         
         mn = sigmahi - sigmalo
+        # ~ if np.mean(sigmahi) > np.mean(sigmalo):
+            # ~ mn = sigmahi - sigmalo
+        # ~ else:
+            # ~ mn = np.abs(sigmahi - sigmalo)
         # ~ mn[mn < 0] = 0
         
         # ~ fw = (self.rhow * self.phi**self.n / self.phi**self.m * \
@@ -99,6 +103,11 @@ class PPMod():
         sigmalo = 1. / rholo
         
         mn = sigmahi - sigmalo
+        print(mn)
+        # ~ if np.mean(sigmahi) > np.mean(sigmalo):
+            # ~ mn = sigmahi - sigmalo
+        # ~ else:
+            # ~ mn = np.abs(sigmahi - sigmalo)
         # ~ mn[mn < 0] = 0
         
         # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
