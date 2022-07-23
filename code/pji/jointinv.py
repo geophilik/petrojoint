@@ -6,7 +6,7 @@ from .lsqrinversion import LSQRInversion
 class JointInv(LSQRInversion):
     def __init__(self, fop, data, error, startmodel, lam=20, beta=10000,
                  maxIter=50, fwmin=0, fwmax=1, famin=0,
-                 famax=1, frmin=0, frmax=1):
+                 famax=1, frmin=0, frmax=1, mmin=0, mmax=3.5):
         LSQRInversion.__init__(self, data, fop, verbose=True, dosave=True)
         self._error = pg.RVector(error)
 
@@ -28,7 +28,7 @@ class JointInv(LSQRInversion):
         self.transforms = []
         phase_limits = [[fwmin, fwmax], [famin, famax],
                         # ~ [0, 1e5], [frmin, frmax]]
-                        [frmin, frmax]]
+                        [frmin, frmax], [mmin, mmax]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:
                 lower = 0.001
@@ -53,7 +53,7 @@ class JointInv(LSQRInversion):
         fop.createConstraints()  # Important!
         ones = pg.RVector(fop._I.rows(), 1.0)
         # ~ phiVec = pg.cat(ones, startmodel)
-        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 3])
+        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 4])
         print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)

@@ -73,72 +73,45 @@ class PPMod():
         sigmalo = 1. / rholo
         
         mn = sigmahi - sigmalo
-        # ~ if np.mean(sigmahi) > np.mean(sigmalo):
-            # ~ mn = sigmahi - sigmalo
-        # ~ else:
-            # ~ mn = np.abs(sigmahi - sigmalo)
-        # ~ mn[mn < 0] = 0
-        
-        # ~ fw = (self.rhow * self.phi**self.n / self.phi**self.m * \
-              # ~ (sigmahi - (mn) / self.R))**(1. / self.n)
+
         fw = (self.rhow * (self.phi**(self.n) / self.phi**(self.m)) * \
               (sigmahi - mn / self.R))**(1. / self.n)
         fw[np.isclose(fw, 0)] = 0
         return fw
-
-    # ~ def cec(self, rholo, rhohi, fw):
-        # ~ sigmahi = 1. / rhohi
-        # ~ sigmalo = 1. / rholo
-        
-        # ~ mn = sigmahi - sigmalo
-        # ~ # mn[mn < 0] = 0
-        
-        # ~ # cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
-        # ~ cec = self.phi**(self.n - self.m) * mn / (fw**(self.n-1) * self.rhog * self.l)
-        
-        # ~ return cec
 
     def cec(self, rholo, rhohi):
         sigmahi = 1. / rhohi
         sigmalo = 1. / rholo
         
         mn = sigmahi - sigmalo
-        print(mn)
-        # ~ if np.mean(sigmahi) > np.mean(sigmalo):
-            # ~ mn = sigmahi - sigmalo
-        # ~ else:
-            # ~ mn = np.abs(sigmahi - sigmalo)
-        # ~ mn[mn < 0] = 0
-        
-        # ~ cec = (self.phi / fw)**(self.n-1) * self.phi**(self.m-1) * (mn) / (self.rhog * self.l)
+
         cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
         
         cec[np.isclose(cec, 0)] = 0
         
         return cec
-
-    # ~ def air(self, rho, v):
-        # ~ fa = ((self.vi * self.va / (self.vi - self.va) * (
-            # ~ 1. / v - self.fr / self.vr - self.phi / self.vi - self.water(rho) *
-            # ~ (1. / self.vw - 1. / self.vi))))
-        # ~ fa[np.isclose(fa, 0)] = 0
-        # ~ return fa
         
     def air(self, rholo, rhohi, v):
         fa = self.va * (1. / v - self.fr / self.vr - self.water(rholo, rhohi) / self.vw)
         fa[np.isclose(fa, 0)] = 0
         return fa
+    
+    def calcm(self, rholo, rhohi):
+        print('#' * 30)
+        print('<<<COMPUTE M>>>')
+        print('#' * 30)
         
-    # ~ def air(self, rho, v):
-        # ~ fa = (2 - self.water(rho) + (1 + v / self.vw) - self.fr * (1 + v / self.vr)) / (1 + v / self.va)
-        # ~ fa[np.isclose(fa, 0)] = 0
-        # ~ return fa
+        sigmahi = 1. / rhohi
+        sigmalo = 1. / rholo
         
-    # ~ def air(self, rho, v):
-        # ~ fa = (1 / 2) * (1 - self.water(rho) - self.fr + self.va * (1 / v - self.water(rho) / self.vw - self.fr / self.vr))
-        # ~ fa[np.isclose(fa, 0)] = 0
-        # ~ return fa
-
+        mn = sigmahi - sigmalo
+        
+        # ~ m = np.log(self.water(rholo, rhohi)**(-self.n)*(-self.cec(rholo, rhohi)*self.l*self.rhog + mn)*np.exp(self.n*np.log(self.phi)))/np.log(self.phi)
+        
+        m = np.ones_like(mn) * 2
+        
+        return m
+        
     def rho_old(self, fw, fa, fr=None):
         """Return electrical resistivity based on fraction of water `fw`."""
         if fr is None:
@@ -153,158 +126,85 @@ class PPMod():
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
 
-    # ~ def rholo(self, fw, fa, cec, fr=None):
-        # ~ if fr is None:
-            # ~ phi = fw + fa
-        # ~ else:
-            # ~ phi = 1 - fr
-        
-        # ~ #~ print('+' * 30)
-        # ~ #~ print(fw.mean())
-        # ~ #~ print('+' * 30)
-        # ~ #~ print('+' * 30)
-        # ~ #~ print(fa.mean())
-        # ~ #~ print('+' * 30)
-        # ~ #~ print('+' * 30)
-        # ~ #~ print(cec.mean())
-        # ~ #~ print('+' * 30)
-        # ~ #~ print('+' * 30)
-        # ~ #~ print(fr.mean())
-        # ~ #~ print('+' * 30)
-        # ~ rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
-                # ~ fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
-        
-        # ~ #~ print('+' * 30)
-        # ~ #~ print(rho.mean())
-        # ~ #~ print('+' * 30)
-        
-        # ~ if (rho <= 0).any():
-            # ~ pg.warn(
-                # ~ "Found negative resistivity, setting to nearest above zero.")
-            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
-        # ~ return rho
-
-    # ~ def rhohi(self, fw, fa, cec, fr=None):
-        # ~ if fr is None:
-            # ~ phi = fw + fa
-        # ~ else:
-            # ~ phi = 1 - fr
-            
-        # ~ rho = phi**(self.n - self.m) * (fw**self.n * self.rhow**(-1) + \
-                # ~ fw**(self.n-1) * self.rhog * self.B * cec)
-        
-        # ~ if (rho <= 0).any():
-            # ~ pg.warn(
-                # ~ "Found negative resistivity, setting to nearest above zero.")
-            # ~ rho[rho <= 0] = np.min(rho[rho > 0])
-        # ~ return rho
-
-    def rhohi(self, fw, fa, cec, fr=None):
+    def rhohi(self, fw, fa, cec, m, fr=None):
         """Return high frequency electrical resistivity based on 
         fraction of water `fw` and cation exchange capacity `CEC`."""
 
-        rho = 1. / self.sigmahi(fw, fa, cec, fr)
+        rho = 1. / self.sigmahi(fw, fa, cec, m, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
     
-    def sigmahi(self, fw, fa, cec, fr):
+    def sigmahi(self, fw, fa, cec, m, fr):
         if fr is None:
             phi = fw + fa
         else:
             phi = 1 - fr
             
-        return (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
-               (fw / phi)**(self.n-1) * (phi**self.m / phi) * self.rhog * self.B * cec
+        return (fw / phi)**self.n * phi**m * (1 / self.rhow) + \
+               (fw / phi)**(self.n-1) * (phi**m / phi) * self.rhog * self.B * cec
     
-    def rholo(self, fw, fa, cec, fr=None):
+    def rholo(self, fw, fa, cec, m, fr=None):
         """Return low frequency electrical resistivity based on 
         fraction of water `fw` and cation exchange capacity `CEC`."""
 
-        rho = 1. / self.sigmalo(fw, fa, cec, fr)
+        rho = 1. / self.sigmalo(fw, fa, cec, m, fr)
         if (rho <= 0).any():
             pg.warn(
                 "Found negative resistivity, setting to nearest above zero.")
             rho[rho <= 0] = np.min(rho[rho > 0])
         return rho
     
-    def sigmalo(self, fw, fa, cec, fr):
+    def sigmalo(self, fw, fa, cec, m, fr):
         if fr is None:
             phi = fw + fa
         else:
             phi = 1 - fr
 
-        return (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
-               (fw / phi)**(self.n-1) * (phi**self.m / phi) * self.rhog * (self.B - self.l) * cec
+        return (fw / phi)**self.n * phi**m * (1 / self.rhow) + \
+               (fw / phi)**(self.n-1) * (phi**m / phi) * self.rhog * (self.B - self.l) * cec
     
-    # ~ def rho_deriv_fw(self, fw, fa, fr):
-        # ~ return self.rho(fw, fa, fr) * -self.n / fw
+    def rholo_deriv_fw(self, fw, fa, cec, m, fr):
+        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**m * (1/self.rhog) - \
+            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * (self.B - self.l) * cec)) / \
+            self.sigmalo(fw, fa, cec, m, fr)**2
     
-    # ~ def rholo_deriv_fw(self, fw, fa, cec, fr):
-        # ~ return self.rholo(fw, fa, cec, fr) * \
-            # ~ (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * (self.B - self.l) * cec) / \
-            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
-    
-    # ~ def rhohi_deriv_fw(self, fw, fa, cec, fr):
-        # ~ return self.rhohi(fw, fa, cec, fr) * \
-            # ~ (-self.n * fw**(self.n-1) * self.rhow**(-1) - (self.n-1) * fw**(self.n-2) * self.rhog * self.B * cec) / \
-            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * self.B * cec)
-    
-    def rholo_deriv_fw(self, fw, fa, cec, fr):
-        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhog) - \
-            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec)) / \
-            self.sigmahi(fw, fa, cec, fr)**2
-    
-    def rhohi_deriv_fw(self, fw, fa, cec, fr):
-        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhog) - \
-            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec)) / \
-            self.sigmahi(fw, fa, cec, fr)**2
+    def rhohi_deriv_fw(self, fw, fa, cec, m, fr):
+        return ((1 / fw) * (-self.n * (fw / (1-fr))**self.n * (1-fr)**m * (1/self.rhog) - \
+            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * self.B * cec)) / \
+            self.sigmahi(fw, fa, cec, m, fr)**2
 
-    # ~ def rho_deriv_fr(self, fw, fa, fr):
-        # ~ return self.rho(fw, fa, fr) * (self.n - self.m) / (fr - 1)
+    def rholo_deriv_fr(self, fw, fa, cec, m, fr):
+        return ((1/(1-fr)) * (-(1-m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * (self.B - self.l) * cec - \
+            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * (self.B - self.l) * cec + \
+            m * (fw/(1-fr))**self.n * (1-fr)**m * (1/self.rhow)) - \
+            self.n * (fw/(1-fr))**self.n * (1-fr)**m * (1/self.rhow)) / \
+            self.sigmalo(fw, fa, cec, m, fr)**2
 
-    # ~ def rholo_deriv_fr(self, fw, fa, cec, fr):
-        # ~ return self.rholo(fw, fa, cec, fr) * \
-            # ~ (self.m - self.n) / (1 - fr)
+    def rhohi_deriv_fr(self, fw, fa, cec, m, fr):
+        return ((1/(1-fr)) * (-(1-m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * self.B * cec - \
+            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(m-1) * self.rhog * self.B * cec + \
+            m * (fw/(1-fr))**self.n * (1-fr)**m * (1/self.rhow)) - \
+            self.n * (fw/(1-fr))**self.n * (1-fr)**m * (1/self.rhow)) / \
+            self.sigmahi(fw, fa, cec, m, fr)**2
+            
+    def rholo_deriv_m(self, fw, fa, cec, m, fr):
+        return ((1-fr)**m*np.log(1-fr)*(fw/(1-fr))**(self.n)*(1/self.rhow) + \
+                (1-fr)**m*np.log(1-fr)*(fw/(1-fr))**(self.n)*(1/self.rhow)*self.rhog*(self.B-self.l)*cec) / \
+                self.sigmalo(fw, fa, cec, m, fr)**2
+            
+    def rhohi_deriv_m(self, fw, fa, cec, m, fr):
+        return ((1-fr)**m*np.log(1-fr)*(fw/(1-fr))**(self.n)*(1/self.rhow) + \
+                (1-fr)**m*np.log(1-fr)*(fw/(1-fr))**(self.n)*(1/self.rhow)*self.rhog*self.B*cec) / \
+                self.sigmahi(fw, fa, cec, m, fr)**2
 
-    # ~ def rhohi_deriv_fr(self, fw, fa, cec, fr):
-        # ~ return self.rhohi(fw, fa, cec, fr) * \
-            # ~ (self.m - self.n) / (1 - fr)
-
-    def rholo_deriv_fr(self, fw, fa, cec, fr):
-        return ((1/(1-fr)) * (-(1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec - \
-            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec + \
-            self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) - \
-            self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
-            self.sigmahi(fw, fa, cec, fr)**2
-
-    def rhohi_deriv_fr(self, fw, fa, cec, fr):
-        return ((1/(1-fr)) * (-(1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec - \
-            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec + \
-            self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) - \
-            self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
-            self.sigmahi(fw, fa, cec, fr)**2
-        
-    # ~ def rho_deriv_fa(self, fw, fa, fr):
-        # ~ return 0
-
-    def rholo_deriv_fa(self, fw, fa, cec, fr):
+    def rholo_deriv_fa(self, fw, fa, cec, m, fr):
         return 0
 
-    def rhohi_deriv_fa(self, fw, fa, cec, fr):
+    def rhohi_deriv_fa(self, fw, fa, cec, m, fr):
         return 0
-
-    # ~ def rholo_deriv_cec(self, fw, fa, cec, fr):
-        # ~ return self.rholo(fw, fa, cec, fr) * \
-            # ~ (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
-            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
-
-    # ~ def rhohi_deriv_cec(self, fw, fa, cec, fr):
-        # ~ return self.rhohi(fw, fa, cec, fr) * \
-            # ~ (-fw**(self.n-1) * self.rhog * (self.B - self.l)) / \
-            # ~ (fw**self.n * self.rhow**(-1) + fw**(self.n-1) * self.rhog * (self.B - self.l) * cec)
 
     def slowness(self, fw, fa, fr=None):
         """Return slowness based on fraction of water `fw` and air `fa`."""
@@ -329,6 +229,7 @@ class PPMod():
         fa = self.air(rholo, rhohi, v)
         fw = self.water(rholo, rhohi)
         cec = self.cec(rholo, rhohi)
+        m = self.calcm(rholo, rhohi)
 
         # Check that fractions are between 0 and 1
         array_mask = np.array(((fa < 0) | (fa > 1 - self.fr))
@@ -342,7 +243,7 @@ class PPMod():
             fa = np.ma.array(fa, mask=(fa < 0) | (fa > 1 - self.fr))
             fw = np.ma.array(fw, mask=(fw < 0) | (fw > 1 - self.fr))
 
-        return fa, fw, cec, array_mask
+        return fa, fw, cec, m, array_mask
 
     def show(self, mesh, rho, vel, mask=True, **kwargs):
         fa, fw, mask = self.all(rho, vel, mask=mask)

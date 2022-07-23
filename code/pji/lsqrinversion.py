@@ -37,7 +37,7 @@ class LSQRInversion(pg.RInversion):
                 break
             # ~ phi = self.getPhi()
             model = self.model()
-            phi = self.getPhi(model[:self.fop().cellCount * 3],
+            phi = self.getPhi(model[:self.fop().cellCount * 4],
                               self.fop().response(model))
             if i > 2:
                 print("Phi / oldphi", phi / oldphi)
@@ -49,6 +49,9 @@ class LSQRInversion(pg.RInversion):
             if i + 1 == self.maxIter():
                 print("Done. Maximum number of iterations reached.")
             oldphi = phi
+            
+        # ~ model = self.fop().updateCEC(self.model())
+        # ~ self.setModel(model)
         return self.model()
 
     def oneStep(self):
@@ -80,7 +83,7 @@ class LSQRInversion(pg.RInversion):
             tD.deriv(self.data()) * self.error() * self.data())
         self.leftJ = tD.deriv(self.response()) * self.dScale
         #        self.leftJ = self.dScale / tD.deriv(self.response())
-        self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 3])
+        self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
         # ~ print("#" * 30)
         # ~ print("J",J.cols(), J.rows())
         # ~ print("leftJ",len(self.leftJ))
@@ -102,7 +105,7 @@ class LSQRInversion(pg.RInversion):
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         # % part 3: parameter constraints
         if self.G is not None:
-            self.rightG = 1.0 / tM.deriv(model[:self.fop().cellCount * 3])
+            self.rightG = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
             # ~ tmp = 1.0 / tM.deriv(model)
             # ~ tmp[self.fop().cellCount*2:self.fop().cellCount*3] = 1.
             # ~ self.rightG = tmp
@@ -114,15 +117,15 @@ class LSQRInversion(pg.RInversion):
         self.A.recalcMatrixSize()
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
-        deltaC = -(self.CC * tM.fwd(model[:self.fop().cellCount * 3]) * sqrt(lam))
+        deltaC = -(self.CC * tM.fwd(model[:self.fop().cellCount * 4]) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
-            deltaG = (self.c - self.G * model[:self.fop().cellCount * 3]) * sqrt(self.my)
+            deltaG = (self.c - self.G * model[:self.fop().cellCount * 4]) * sqrt(self.my)
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
 
         dM = lsqr(self.A, rhs)
-        # ~ dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:] * -1)
+        # ~ dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 4:] * -1)
         dM = pg.cat(dM, np.ones(self.fop().cellCount))
         tau, responseLS = self.lineSearchInter(dM, model)
         if tau < 0.1:  # did not work out
@@ -138,7 +141,7 @@ class LSQRInversion(pg.RInversion):
 
         # ~ self.setModel(tM.update(self.model(), dM * tau))
         umodel = tM.update(model, dM * tau)
-        umodel = pg.cat(umodel[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
+        umodel = pg.cat(umodel[:self.fop().cellCount * 4], model[self.fop().cellCount * 4:])
         
         # ~ # update cec
         # ~ umodel = self.fop().updateCEC(umodel)
@@ -168,7 +171,7 @@ class LSQRInversion(pg.RInversion):
         # ~ print(model)
         # ~ print(dM)
         modelLS = tM.update(model, dM)
-        modelLS = pg.cat(modelLS[:self.fop().cellCount * 3], model[self.fop().cellCount * 3:])
+        modelLS = pg.cat(modelLS[:self.fop().cellCount * 4], model[self.fop().cellCount * 4:])
         responseLS = self.forwardOperator().response(modelLS)
         taus = np.linspace(0.0, 1.0, nTau)
         phi = np.ones_like(taus) * self.getPhi()
@@ -176,14 +179,14 @@ class LSQRInversion(pg.RInversion):
         # ~ print(modelLS)
         # ~ print(responseLS)
         # ~ print('#' * 30)
-        phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 3], responseLS)
+        phi[-1] = self.getPhi(modelLS[:self.fop().cellCount * 4], responseLS)
         t0 = tD.fwd(response)
         t1 = tD.fwd(responseLS)
         for i in range(1, len(taus) - 1):
             tau = taus[i]
             modelI = tM.update(model, dM * tau)
             responseI = tD.inv(t1 * tau + t0 * (1.0 - tau))
-            phi[i] = self.getPhi(modelI[:self.fop().cellCount * 3], responseI)
+            phi[i] = self.getPhi(modelI[:self.fop().cellCount * 4], responseI)
 
         return taus[np.argmin(phi)], responseLS
 
