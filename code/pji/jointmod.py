@@ -277,9 +277,11 @@ class JointMod(pg.ModellingBase):
         rholo = self.pm.rholo(fw, fa, cec, m, fr)
         rhohi = self.pm.rhohi(fw, fa, cec, m, fr)
         
-        cec = self.pm.cec(rholo, rhohi)/963.2
-        cec[cec<1] = 1
-        cec *= 963.2
+        # ~ cec = self.pm.cec(rholo, rhohi)
+        cec = self.pm.cec(rholo, rhohi, fw+fa, m)
+        # ~ cec = self.pm.cec(rholo, rhohi)/963.2
+        # ~ cec[cec<1] = 1
+        # ~ cec *= 963.2
         
         return pg.cat(model[:cec.size * 4], cec)
 
