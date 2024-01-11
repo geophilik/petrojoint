@@ -8,7 +8,7 @@ import pygimli as pg
 class JointMod(pg.ModellingBase):
     def __init__(self, mesh, ertlofop, erthifop, srtfop, petromodel, fix_poro=True,
                  zWeight=1, verbose=True, corr_l=None, fix_water=False,
-                 fix_air=False, fix_cec=False):
+                 fix_ice=False, fix_air=False): #, fix_temp=True):
         """Joint petrophysical modeling operator.
 
         Parameters
@@ -36,9 +36,11 @@ class JointMod(pg.ModellingBase):
         self.pm = petromodel
         self.cellCount = self.mesh.cellCount()
         self.fix_water = fix_water
+        self.fix_ice = fix_ice
         self.fix_air = fix_air
         # ~ self.fix_cec = fix_cec
         self.fix_poro = fix_poro
+        # ~ self.fix_temp = fix_temp
         self.zWeight = zWeight
         # self.fix_cells = fix_cells
         self.corr_l = corr_l
@@ -46,20 +48,20 @@ class JointMod(pg.ModellingBase):
 
     def fractions(self, model):
         """Split model vector into individual distributions"""
-        return np.reshape(model, (4, self.cellCount))
+        return np.reshape(model, (5, self.cellCount))
 
     def createJacobian(self, model):
         #~ print('*' * 30)
         #~ print('here')
         #~ print('*' * 30)
         # ~ fw, fa, cec, fr = self.fractions(model)
-        fw, fa, fr, cec = self.fractions(model)
+        fw, fi, fa, fr, cec = self.fractions(model)
         
         # ~ print(fw, fa, cec, fr)
 
-        rholo = self.pm.rholo(fw, fa, cec, fr)
-        rhohi = self.pm.rhohi(fw, fa, cec, fr)
-        s = self.pm.slowness(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fi, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fi, fa, cec, fr)
+        s = self.pm.slowness(fw, fi, fa, fr)
         
         # ~ print(rholo, rhohi, s)
 
@@ -81,46 +83,59 @@ class JointMod(pg.ModellingBase):
         jacSRT = self.SRT.fop.jacobian()
 
         # Setting inner derivatives
-        self.jacSRTW = pg.MultRightMatrix(jacSRT, r=1. / self.pm.vw)
-        self.jacSRTA = pg.MultRightMatrix(jacSRT, r=1. / self.pm.va)
-        # ~ self.jacSRTC = pg.MultRightMatrix(jacSRT, r=0)
-        self.jacSRTR = pg.MultRightMatrix(jacSRT, r=1. / self.pm.vr)
+        self.jacSRTW = pg.MultRightMatrix(
+            jacSRT, r=self.pm.slowness_deriv_fw())
+        self.jacSRTI = pg.MultRightMatrix(
+            jacSRT, r=self.pm.slowness_deriv_fi())
+        self.jacSRTA = pg.MultRightMatrix(
+            jacSRT, r=self.pm.slowness_deriv_fa())
+        self.jacSRTR = pg.MultRightMatrix(
+            jacSRT, r=self.pm.slowness_deriv_fr())
+        # ~ self.jacSRTT = pg.MultRightMatrix(
+            # ~ jacSRT, r=self.pm.slowness_deriv_t())
 
         self.jacERTloW = pg.MultRightMatrix(
-            jacERTlo, r=self.pm.rholo_deriv_fw(fw, fa, cec, fr))
+            jacERTlo, r=self.pm.rholo_deriv_fw(fw, fi, fa, cec, fr))
+        self.jacERTloI = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_fi(fw, fi, fa, cec, fr))
         self.jacERTloA = pg.MultRightMatrix(
-            jacERTlo, r=self.pm.rholo_deriv_fa(fw, fa, cec, fr))
-        # ~ self.jacERTloC = pg.MultRightMatrix(
-            # ~ jacERTlo, r=self.pm.rholo_deriv_cec(fw, fa, cec, fr))
+            jacERTlo, r=self.pm.rholo_deriv_fa(fw, fi, fa, cec, fr))
         self.jacERTloR = pg.MultRightMatrix(
-            jacERTlo, r=self.pm.rholo_deriv_fr(fw, fa, cec, fr))
+            jacERTlo, r=self.pm.rholo_deriv_fr(fw, fi, fa, cec, fr))
+        # ~ self.jacERTloT = pg.MultRightMatrix(
+            # ~ jacERTlo, r=self.pm.rholo_deriv_t(fw, fi, fa, cec, fr))
 
         self.jacERThiW = pg.MultRightMatrix(
-            jacERThi, r=self.pm.rhohi_deriv_fw(fw, fa, cec, fr))
+            jacERThi, r=self.pm.rhohi_deriv_fw(fw, fi, fa, cec, fr))
+        self.jacERThiI = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_fi(fw, fi, fa, cec, fr))
         self.jacERThiA = pg.MultRightMatrix(
-            jacERThi, r=self.pm.rhohi_deriv_fa(fw, fa, cec, fr))
-        # ~ self.jacERThiC = pg.MultRightMatrix(
-            # ~ jacERThi, r=self.pm.rhohi_deriv_cec(fw, fa, cec, fr))
+            jacERThi, r=self.pm.rhohi_deriv_fa(fw, fi, fa, cec, fr))
         self.jacERThiR = pg.MultRightMatrix(
-            jacERThi, r=self.pm.rhohi_deriv_fr(fw, fa, cec, fr))
+            jacERThi, r=self.pm.rhohi_deriv_fr(fw, fi, fa, cec, fr))
+        # ~ self.jacERThiT = pg.MultRightMatrix(
+            # ~ jacERThi, r=self.pm.rhohi_deriv_t(fw, fi, fa, cec, fr))
 
         # Putting subjacobians together in block matrix
         self.jac = pg.BlockMatrix()
         nData = 0
         self.jac.addMatrix(self.jacSRTW, nData, 0)
-        self.jac.addMatrix(self.jacSRTA, nData, self.cellCount)
-        # ~ self.jac.addMatrix(self.jacSRTC, nData, self.cellCount * 2)
-        self.jac.addMatrix(self.jacSRTR, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacSRTI, nData, self.cellCount)
+        self.jac.addMatrix(self.jacSRTA, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacSRTR, nData, self.cellCount * 3)
+        # ~ self.jac.addMatrix(self.jacSRTT, nData, self.cellCount * 4)
         nData += self.SRT.fop.data().size()  # update total vector length
         self.jac.addMatrix(self.jacERTloW, nData, 0)
-        self.jac.addMatrix(self.jacERTloA, nData, self.cellCount)
-        # ~ self.jac.addMatrix(self.jacERTloC, nData, self.cellCount * 2)
-        self.jac.addMatrix(self.jacERTloR, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERTloI, nData, self.cellCount)
+        self.jac.addMatrix(self.jacERTloA, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERTloR, nData, self.cellCount * 3)
+        # ~ self.jac.addMatrix(self.jacERTloT, nData, self.cellCount * 4)
         nData += self.ERTlo.fop.data().size()
         self.jac.addMatrix(self.jacERThiW, nData, 0)
-        self.jac.addMatrix(self.jacERThiA, nData, self.cellCount)
-        # ~ self.jac.addMatrix(self.jacERThiC, nData, self.cellCount * 2)
-        self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERThiI, nData, self.cellCount)
+        self.jac.addMatrix(self.jacERThiA, nData, self.cellCount * 2)
+        self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
+        # ~ self.jac.addMatrix(self.jacERThiT, nData, self.cellCount * 4)
         
         #~ print('*' * 30)
         #~ print('and then here')
@@ -154,8 +169,9 @@ class JointMod(pg.ModellingBase):
         cid = self._C.addMatrix(self._CW)
         self._C.addMatrixEntry(cid, 0, 0)
         self._C.addMatrixEntry(cid, self._Ctmp.rows(), self.cellCount)
-        # ~ self._C.addMatrixEntry(cid, self._Ctmp.rows() * 2, self.cellCount * 2)
-        self._C.addMatrixEntry(cid, self._Ctmp.rows() * 3, self.cellCount * 2)
+        self._C.addMatrixEntry(cid, self._Ctmp.rows() * 2, self.cellCount * 2)
+        self._C.addMatrixEntry(cid, self._Ctmp.rows() * 3, self.cellCount * 3)
+        # ~ self._C.addMatrixEntry(cid, self._Ctmp.rows() * 4, self.cellCount * 4)
         self.setConstraints(self._C)
 
         # Identity matrix for interparameter regularization
@@ -165,15 +181,15 @@ class JointMod(pg.ModellingBase):
         iid = self._G.addMatrix(self._I)
         self._G.addMatrixEntry(iid, 0, 0)
         self._G.addMatrixEntry(iid, 0, self.cellCount)
-        # ~ self._G.addMatrixEntry(iid, 0, self.cellCount * 2)
         self._G.addMatrixEntry(iid, 0, self.cellCount * 2)
+        self._G.addMatrixEntry(iid, 0, self.cellCount * 3)
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
         # ~ phases = ["water", "air", "cec", "rock matrix"]
-        phases = ["water", "air", "rock matrix"]
-        for i, phase in enumerate([self.fix_water, self.fix_air,# self.fix_cec,
-                                   self.fix_poro]):
+        phases = ["water", "ice", "air", "rock matrix", "temperature"]
+        for i, phase in enumerate([self.fix_water, self.fix_ice, self.fix_air,
+                                   self.fix_poro]):#, self.fix_temp]):
             name = phases[i]
             vec = pg.RVector(self.cellCount)
             if phase is True:
@@ -189,15 +205,17 @@ class JointMod(pg.ModellingBase):
 
     def showModel(self, model):
         # ~ fw, fa, cec, fr = self.fractions(model)
-        fw, fa, fr, cec = self.fractions(model)
+        fw, fi, fa, fr, t, cec = self.fractions(model)
 
-        rholo = self.pm.rholo(fw, fa, cec, fr)
-        rhohi = self.pm.rhohi(fw, fa, cec, fr)
-        s = self.pm.slowness(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fi, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fi, fa, cec, fr)
+        s = self.pm.slowness(fw, fi, fa, fr)
 
         _, axs = plt.subplots(3, 3)
         pg.show(self.mesh, fw, ax=axs[0, 0], label="Water content", hold=True,
                 logScale=False, cMap="Blues")
+        pg.show(self.mesh, fi, ax=axs[1, 0], label="Ice content", hold=True,
+                logScale=False, cMap="Purples")
         pg.show(self.mesh, fa, ax=axs[2, 0], label="Air content", hold=True,
                 logScale=False, cMap="Greens")
         pg.show(self.mesh, fr, ax=axs[2, 1], label="Rock matrix content",
@@ -264,44 +282,54 @@ class JointMod(pg.ModellingBase):
         return chi2tt, rmstt
 
     def updateCEC(self, model):
-        fw, fa, fr, cec = self.fractions(model)
-        rholo = self.pm.rholo(fw, fa, cec, fr)
-        rhohi = self.pm.rhohi(fw, fa, cec, fr)
+        fw, fi, fa, fr, cec = self.fractions(model)
+        print('<<< CEC before >>>')
+        print(cec)
+        rholo = self.pm.rholo(fw, fi, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fi, fa, cec, fr)
         
-        cec = self.pm.cec(rholo, rhohi)
+        # ~ print('<<< 1-fr >>>')
+        # ~ print(1-fr)
+        # ~ self.pm.phi = 1 - fr
+        # ~ self.pm.fr = fr
+        cecu = self.pm.cec(rholo, rhohi)
         
-        return pg.cat(model[:cec.size * 3], cec)
-
+        print('<<< CEC after >>>')
+        print(cecu)
+        
+        return pg.cat(model[:cec.size * 4], cecu)
+    
     def response(self, model):
         return self.response_mt(model)
 
     def response_mt(self, model, i=0):
         model = np.nan_to_num(model)
-        fw, fa, fr, cec = self.fractions(model)
+        fw, fi, fa, fr, cec = self.fractions(model)
 
-        rholo = self.pm.rholo(fw, fa, cec, fr)
-        rhohi = self.pm.rhohi(fw, fa, cec, fr)
-        s = self.pm.slowness(fw, fa, fr)
+        rholo = self.pm.rholo(fw, fi, fa, cec, fr)
+        rhohi = self.pm.rhohi(fw, fi, fa, cec, fr)
+        s = self.pm.slowness(fw, fi, fa, fr)
 
         print("=" * 30)
         print("        Min. | Max.")
         print("-" * 30)
         print(" Water: %.2f | %.2f" % (np.min(fw), np.max(fw)))
+        print(" Ice:   %.2f | %.2f" % (np.min(fi), np.max(fi)))
         print(" Air:   %.2f | %.2f" % (np.min(fa), np.max(fa)))
         print(" Rock:  %.2f | %.2f" % (np.min(fr), np.max(fr)))
         print("-" * 30)
-        print(" SUM:   %.2f | %.2f" % (np.min(fa + fw + fr),
-                                       np.max(fa + fw + fr)))
+        print(" SUM:   %.2f | %.2f" % (np.min(fa + fi + fw + fr),
+                                       np.max(fa + fi + fw + fr)))
         print("-" * 30)
         print(" CEC: %.2f | %.2f" % (np.min(cec), np.max(cec)))
         print("-" * 30)
         print("=" * 30)
-        print(" Rho:   %.2e | %.2e" % (np.min(rholo), np.max(rholo)))
-        print(" Rho:   %.2e | %.2e" % (np.min(rhohi), np.max(rhohi)))
+        print(" Rho_DC:   %.2e | %.2e" % (np.min(rholo), np.max(rholo)))
+        print(" Rho_infty:   %.2e | %.2e" % (np.min(rhohi), np.max(rhohi)))
         print(" Vel:   %d | %d" % (np.min(1 / s), np.max(1 / s)))
 
-        t = self.SRT.fop.response(s)
+        tt = self.SRT.fop.response(s)
         rholoa = self.ERTlo.fop.response(rholo)
         rhohia = self.ERThi.fop.response(rhohi)
 
-        return pg.cat(t, pg.cat(rholoa, rhohia))
+        return pg.cat(tt, pg.cat(rholoa, rhohia))

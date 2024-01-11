@@ -5,7 +5,7 @@ from .lsqrinversion import LSQRInversion
 
 class JointInv(LSQRInversion):
     def __init__(self, fop, data, error, startmodel, lam=20, beta=10000,
-                 maxIter=50, fwmin=0, fwmax=1, famin=0,
+                 maxIter=50, fwmin=0, fimin=0, fwmax=1, fimax=1, famin=0,
                  famax=1, frmin=0, frmax=1):
         LSQRInversion.__init__(self, data, fop, verbose=True, dosave=True)
         self._error = pg.RVector(error)
@@ -27,8 +27,7 @@ class JointInv(LSQRInversion):
         self.mcumtrans = pg.TransCumulative()
         self.transforms = []
         phase_limits = [[fwmin, fwmax], [famin, famax],
-                        # ~ [0, 1e5], [frmin, frmax]]
-                        [frmin, frmax]]
+                        [fimin, fimax], [frmin, frmax]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:
                 lower = 0.001
@@ -52,8 +51,11 @@ class JointInv(LSQRInversion):
         fop = self.forwardOperator()
         fop.createConstraints()  # Important!
         ones = pg.RVector(fop._I.rows(), 1.0)
+        # ~ print('<<< G >>>')
+        # ~ print(fop._G)
         # ~ phiVec = pg.cat(ones, startmodel)
-        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 3])
-        print(phiVec)
+        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 4])
+        # ~ print('<<< phiVec >>>')
+        # ~ print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)
