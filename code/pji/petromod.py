@@ -460,6 +460,8 @@ class PetroMod():
 
         fw = (self.rhow * self.phi**(self.n-self.m) * \
               (sigmahi - mn / self.R))**(1. / self.n)
+        # ~ fw = (self.rhow * self.phi**-np.abs(self.n-self.m) * \
+              # ~ (sigmahi - mn / self.R))**(1. / self.n)
         # ~ print("<<< fw before >>>", fw.min(), fw.max())
         # ~ fw[self.t<=self.tf] = fw[self.t<=self.tf] * np.exp(-((self.t[self.t<=self.tf]-self.tf)/self.tc)**2)
         # ~ print("<<< fw after >>>", fw.min(), fw.max())
@@ -486,13 +488,13 @@ class PetroMod():
         
         mn = sigmahi - sigmalo
         
-        # ~ print('<<< phi >>>')
-        # ~ print(self.phi)
+        # ~ cec = self.phi**-np.abs(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
         cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
+        
         # ~ cec = (self.water(rholo, rhohi)/self.phi)**(1-self.n)*self.phi**(1-self.m)*(mn/(self.rhog*self.l))
         # ~ cec = mn / (self.water(rholo, rhohi)**(self.m-1) * self.rhog * self.l)
+        
         cec[np.isclose(cec, 0)] = 0
-        # ~ print(cec)
         return cec
 
     def air_hauck2011(self, rho, v):
