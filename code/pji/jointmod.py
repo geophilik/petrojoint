@@ -171,7 +171,7 @@ class JointMod(pg.ModellingBase):
         self._C.addMatrixEntry(cid, self._Ctmp.rows(), self.cellCount)
         self._C.addMatrixEntry(cid, self._Ctmp.rows() * 2, self.cellCount * 2)
         self._C.addMatrixEntry(cid, self._Ctmp.rows() * 3, self.cellCount * 3)
-        # ~ self._C.addMatrixEntry(cid, self._Ctmp.rows() * 4, self.cellCount * 4)
+        self._C.addMatrixEntry(cid, self._Ctmp.rows() * 4, self.cellCount * 4)
         self.setConstraints(self._C)
 
         # Identity matrix for interparameter regularization

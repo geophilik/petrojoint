@@ -489,7 +489,8 @@ class PetroMod():
         mn = sigmahi - sigmalo
         
         # ~ cec = self.phi**-np.abs(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
-        cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
+        # ~ cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
+        cec = (self.water(rholo, rhohi)/(self.phi))**(1-self.n)*self.phi**(1-self.m)*mn/(self.rhog * self.l)
         
         # ~ cec = (self.water(rholo, rhohi)/self.phi)**(1-self.n)*self.phi**(1-self.m)*(mn/(self.rhog*self.l))
         # ~ cec = mn / (self.water(rholo, rhohi)**(self.m-1) * self.rhog * self.l)
