@@ -80,8 +80,8 @@ class LSQRInversion(pg.RInversion):
             tD.deriv(self.data()) * self.error() * self.data())
         self.leftJ = tD.deriv(self.response()) * self.dScale
         #        self.leftJ = self.dScale / tD.deriv(self.response())
-        # ~ self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
-        self.rightJ = 1.0 / tM.deriv(model)
+        self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
+        # ~ self.rightJ = 1.0 / tM.deriv(model)
         print("#" * 30)
         print("J",J.cols(), J.rows())
         print("leftJ",len(self.leftJ))

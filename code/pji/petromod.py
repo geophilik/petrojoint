@@ -433,12 +433,12 @@ class PetroMod():
         self.tc = tc
         
         # temperature dependent parameters
-        # ~ self.B = B
-        # ~ self.l = l
-        # ~ self.rhow = rhow
-        self.B = self._compute_temp_dep(B, B_T0)
-        self.l = self._compute_temp_dep(l, l_T0)
-        self.rhow = self._compute_temp_dep(rhow, rhow_T0)
+        self.B = B
+        self.l = l
+        self.rhow = rhow
+        # ~ self.B = self._compute_temp_dep(B, B_T0)
+        # ~ self.l = self._compute_temp_dep(l, l_T0)
+        # ~ self.rhow = self._compute_temp_dep(rhow, rhow_T0)
         self.R = self.l/self.B
         
         # ~ print("B", self.B)

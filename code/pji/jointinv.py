@@ -27,8 +27,7 @@ class JointInv(LSQRInversion):
         self.mcumtrans = pg.TransCumulative()
         self.transforms = []
         phase_limits = [[fwmin, fwmax], [famin, famax],
-                        [fimin, fimax], [frmin, frmax],
-                        [0, 5*963.2]]
+                        [fimin, fimax], [frmin, frmax]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:
                 lower = 0.001
