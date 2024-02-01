@@ -8,7 +8,7 @@ import pygimli as pg
 class JointMod(pg.ModellingBase):
     def __init__(self, mesh, ertlofop, erthifop, srtfop, petromodel, fix_poro=True,
                  zWeight=1, verbose=True, corr_l=None, fix_water=False,
-                 fix_ice=False, fix_air=False): #, fix_temp=True):
+                 fix_ice=False, fix_air=False, fix_cec=False): #, fix_temp=True):
         """Joint petrophysical modeling operator.
 
         Parameters
@@ -38,7 +38,7 @@ class JointMod(pg.ModellingBase):
         self.fix_water = fix_water
         self.fix_ice = fix_ice
         self.fix_air = fix_air
-        # ~ self.fix_cec = fix_cec
+        self.fix_cec = fix_cec
         self.fix_poro = fix_poro
         # ~ self.fix_temp = fix_temp
         self.zWeight = zWeight
@@ -91,8 +91,8 @@ class JointMod(pg.ModellingBase):
             jacSRT, r=self.pm.slowness_deriv_fa())
         self.jacSRTR = pg.MultRightMatrix(
             jacSRT, r=self.pm.slowness_deriv_fr())
-        # ~ self.jacSRTT = pg.MultRightMatrix(
-            # ~ jacSRT, r=self.pm.slowness_deriv_t())
+        self.jacSRTCEC = pg.MultRightMatrix(
+            jacSRT, r=self.pm.slowness_deriv_cec())
 
         self.jacERTloW = pg.MultRightMatrix(
             jacERTlo, r=self.pm.rholo_deriv_fw(fw, fi, fa, cec, fr))
@@ -102,8 +102,8 @@ class JointMod(pg.ModellingBase):
             jacERTlo, r=self.pm.rholo_deriv_fa(fw, fi, fa, cec, fr))
         self.jacERTloR = pg.MultRightMatrix(
             jacERTlo, r=self.pm.rholo_deriv_fr(fw, fi, fa, cec, fr))
-        # ~ self.jacERTloT = pg.MultRightMatrix(
-            # ~ jacERTlo, r=self.pm.rholo_deriv_t(fw, fi, fa, cec, fr))
+        self.jacERTloCEC = pg.MultRightMatrix(
+            jacERTlo, r=self.pm.rholo_deriv_cec(fw, fi, fa, cec, fr))
 
         self.jacERThiW = pg.MultRightMatrix(
             jacERThi, r=self.pm.rhohi_deriv_fw(fw, fi, fa, cec, fr))
@@ -113,8 +113,8 @@ class JointMod(pg.ModellingBase):
             jacERThi, r=self.pm.rhohi_deriv_fa(fw, fi, fa, cec, fr))
         self.jacERThiR = pg.MultRightMatrix(
             jacERThi, r=self.pm.rhohi_deriv_fr(fw, fi, fa, cec, fr))
-        # ~ self.jacERThiT = pg.MultRightMatrix(
-            # ~ jacERThi, r=self.pm.rhohi_deriv_t(fw, fi, fa, cec, fr))
+        self.jacERThiCEC = pg.MultRightMatrix(
+            jacERThi, r=self.pm.rhohi_deriv_cec(fw, fi, fa, cec, fr))
 
         # Putting subjacobians together in block matrix
         self.jac = pg.BlockMatrix()
@@ -123,19 +123,19 @@ class JointMod(pg.ModellingBase):
         self.jac.addMatrix(self.jacSRTI, nData, self.cellCount)
         self.jac.addMatrix(self.jacSRTA, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacSRTR, nData, self.cellCount * 3)
-        # ~ self.jac.addMatrix(self.jacSRTT, nData, self.cellCount * 4)
+        self.jac.addMatrix(self.jacSRTCEC, nData, self.cellCount * 4)
         nData += self.SRT.fop.data().size()  # update total vector length
         self.jac.addMatrix(self.jacERTloW, nData, 0)
         self.jac.addMatrix(self.jacERTloI, nData, self.cellCount)
         self.jac.addMatrix(self.jacERTloA, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacERTloR, nData, self.cellCount * 3)
-        # ~ self.jac.addMatrix(self.jacERTloT, nData, self.cellCount * 4)
+        self.jac.addMatrix(self.jacERTloCEC, nData, self.cellCount * 4)
         nData += self.ERTlo.fop.data().size()
         self.jac.addMatrix(self.jacERThiW, nData, 0)
         self.jac.addMatrix(self.jacERThiI, nData, self.cellCount)
         self.jac.addMatrix(self.jacERThiA, nData, self.cellCount * 2)
         self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
-        # ~ self.jac.addMatrix(self.jacERThiT, nData, self.cellCount * 4)
+        self.jac.addMatrix(self.jacERThiCEC, nData, self.cellCount * 4)
         
         #~ print('*' * 30)
         #~ print('and then here')
@@ -183,13 +183,14 @@ class JointMod(pg.ModellingBase):
         self._G.addMatrixEntry(iid, 0, self.cellCount)
         self._G.addMatrixEntry(iid, 0, self.cellCount * 2)
         self._G.addMatrixEntry(iid, 0, self.cellCount * 3)
+        self._G.addMatrixEntry(iid, 0, self.cellCount * 4, 0)
 
         self.fix_val_matrices = {}
         # Optionally fix phases to starting model globally or in selected cells
         # ~ phases = ["water", "air", "cec", "rock matrix"]
-        phases = ["water", "ice", "air", "rock matrix", "temperature"]
+        phases = ["water", "ice", "air", "rock matrix", "cec"]
         for i, phase in enumerate([self.fix_water, self.fix_ice, self.fix_air,
-                                   self.fix_poro]):#, self.fix_temp]):
+                                   self.fix_poro, self.fix_cec]):
             name = phases[i]
             vec = pg.RVector(self.cellCount)
             if phase is True:

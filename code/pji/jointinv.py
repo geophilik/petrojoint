@@ -28,7 +28,7 @@ class JointInv(LSQRInversion):
         self.transforms = []
         phase_limits = [[fwmin, fwmax], [famin, famax],
                         [fimin, fimax], [frmin, frmax],
-                        [0, 5*963.2]]
+                        [0, 35*963.2]]
         for i, (lower, upper) in enumerate(phase_limits):
             if lower == 0:
                 lower = 0.001
@@ -54,8 +54,8 @@ class JointInv(LSQRInversion):
         ones = pg.RVector(fop._I.rows(), 1.0)
         # ~ print('<<< G >>>')
         # ~ print(fop._G)
-        # ~ phiVec = pg.cat(ones, startmodel)
-        phiVec = pg.cat(ones, startmodel[:fop.cellCount * 4])
+        phiVec = pg.cat(ones, startmodel)
+        # ~ phiVec = pg.cat(ones, startmodel[:fop.cellCount * 4])
         # ~ print('<<< phiVec >>>')
         # ~ print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)

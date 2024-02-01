@@ -645,6 +645,14 @@ class PetroMod():
 
     def rhohi_deriv_t(self, fw, fi, fa, cec, fr):
         return 0
+
+    def rholo_deriv_cec(self, fw, fi, fa, cec, fr):
+        return -(fw/(1-fr))**(self.n-1)*(1-fr)**(self.m-1)*self.rhog*(self.B-self.l) / \
+            self.sigmalo(fw, fi, fa, cec, fr)**2
+
+    def rhohi_deriv_cec(self, fw, fi, fa, cec, fr):
+        return -(fw/(1-fr))**(self.n-1)*(1-fr)**(self.m-1)*self.rhog*self.B / \
+            self.sigmahi(fw, fi, fa, cec, fr)**2
         
     def slowness(self, fw, fi, fa, fr=None):
         """Return slowness based on fraction of water `fw` and air `fa`."""
@@ -689,6 +697,9 @@ class PetroMod():
         return 1./self.vr
         
     def slowness_deriv_t(self):
+        return 0
+        
+    def slowness_deriv_cec(self):
         return 0
 
     def all(self, rholo, rhohi, v, mask=False):
