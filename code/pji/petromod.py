@@ -376,7 +376,8 @@ class PetroMod():
                  alpha_t=.02, tf=-1, tc=4,
                  R=.1, 
                  B=3.1*1e-9, B_T0=25,
-                 l=3.0*1e-10, l_T0=25):
+                 l=3.0*1e-10, l_T0=25,
+                 tempmod=True):
         """Petrophysical model. Estimates fraction
         of air and water from electrical bulk resistivity and seismic
         velocity.
@@ -433,12 +434,14 @@ class PetroMod():
         self.tc = tc
         
         # temperature dependent parameters
-        # ~ self.B = B
-        # ~ self.l = l
-        # ~ self.rhow = rhow
-        self.B = self._compute_temp_dep(B, B_T0)
-        self.l = self._compute_temp_dep(l, l_T0)
-        self.rhow = self._compute_temp_dep(rhow, rhow_T0)
+        if tempmod:
+            self.B = self._compute_temp_dep(B, B_T0)
+            self.l = self._compute_temp_dep(l, l_T0)
+            self.rhow = self._compute_temp_dep(rhow, rhow_T0)
+        else:
+            self.B = B
+            self.l = l
+            self.rhow = rhow
         self.R = self.l/self.B
         
         # ~ print("B", self.B)
@@ -568,6 +571,26 @@ class PetroMod():
         # ~ return fw**self.m * (1 / self.rhow) + \
                # ~ fw**(self.m-1) * self.rhog * self.B * cec
     
+    def sigmahiel(self, fw, fi, fa, cec, fr):
+        if fr is None:
+            phi = fw + fa + fi
+        else:
+            phi = 1 - fr
+        
+        ret = (fw / phi)**self.n * phi**self.m * (1 / self.rhow)
+               
+        return ret
+    
+    def sigmahis(self, fw, fi, fa, cec, fr):
+        if fr is None:
+            phi = fw + fa + fi
+        else:
+            phi = 1 - fr
+        
+        ret = (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * self.B * cec
+               
+        return ret
+    
     def rholo(self, fw, fi, fa, cec, fr=None):
         """Return low frequency electrical resistivity based on 
         fraction of water `fw` and cation exchange capacity `CEC`."""
@@ -589,7 +612,23 @@ class PetroMod():
                (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
         # ~ return fw**self.m * (1 / self.rhow) + \
                # ~ fw**(self.m-1) * self.rhog * (self.B - self.l) * cec
+        
+    def sigmaloel(self, fw, fi, fa, cec, fr):
+        if fr is None:
+            phi = fw + fa + fi
+        else:
+            phi = 1 - fr
+
+        return (fw / phi)**self.n * phi**self.m * (1 / self.rhow)
     
+    def sigmalos(self, fw, fi, fa, cec, fr):
+        if fr is None:
+            phi = fw + fa + fi
+        else:
+            phi = 1 - fr
+
+        return (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
+        
     def rholo_deriv_fw(self, fw, fi, fa, cec, fr):
         return ((-1 / fw) * (self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhow) + \
             (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec)) / \
