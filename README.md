@@ -1,48 +1,41 @@
-## Imaging of water, ice, and air in permafrost systems through petrophysical joint inversion of seismic refraction and electrical resistivity data
+## Petrophysical Joint Inversion Framework
+This repository contains a collection of inversion frameworks developed to estimate hydrogeological subsurface properties by jointly inverting seismic refraction and electrical resistivity data. The core concept is based on **petrophysical joint inversion (PJI)**, where geophysical responses are linked through petrophysical laws to shared state variables such as porosity, saturation, temperature, and others.
 
-by Florian Wagner, Coline Mollaret, Thomas Günther, Andreas Kemna, and Christian Hauck
-
+The framework was originally developed for applications in **partially frozen porous media**, but the modifications available in this repository make it broadly applicable to various environments where seismic and electrical properties are coupled through pore-scale physics.
 ---
 
-[![DOI](https://img.shields.io/badge/DOI-10.1093/gji/ggz402-orange)](https://doi.org/10.1093/gji/ggz402)
 [![License](https://img.shields.io/badge/license-BSD-green)](LICENSE.md)
-[![powered by pyGIMLi](https://img.shields.io/badge/powered%20by-pyGIMLi-informational?style=flat&logo=python&logoColor=white)](https://www.pygimli.org)
 
-**This repository contains the data and code to reproduce all results and figures published in the following paper:**
+## Motivation
 
-> Wagner, F. M., Mollaret, C., Günther, T., Kemna, A., & Hauck, C. (2019). Quantitative imaging of water, ice, and air in permafrost systems through petrophysical joint inversion of seismic refraction and electrical resistivity data. Geophysical Journal International,  219, 1866-1875, [doi:10.1093/gji/ggz402](https://doi.org/10.1093/gji/ggz402).
+Standard inversion methods for geophysical data often treat different data types independently and use overly simplified petrophysical models. The PJI framework addresses these limitations by:
 
-![Workflow](schematic.svg)
+- Integrating multiple geophysical data types (e.g., seismic and electrical)
+- Linking them through **shared petrophysical parameters** (e.g., porosity, saturation, temperature, cementation exponent)
+- Accounting for **nonlinear couplings** and **state dependencies** of physical properties
+- Allowing **uncertainty-aware** and **data-driven** estimates of hydrogeological properties
 
-*The code realizes both conventional and petrophysical joint inversion of seismic refraction and electrical resistivity data as schematically shown above.*
+The modular design of the framework supports both well-established petrophysical laws (e.g., Archie's law) and extended formulations (e.g., Waxman–Smits, temperature dependence, CEC estimation), facilitating tailored model development.
 
-## Abstract
+## Branch Overview
 
-Quantitative estimation of pore fractions filled with liquid water, ice, and air
-is crucial for a process-based understanding of permafrost and its hazard
-potential upon climate-induced degradation. Geophysical methods offer
-opportunities to image distributions of permafrost constituents in a
-non-invasive manner. We present a method to jointly estimate the volumetric
-fractions of liquid water, ice, air, and the rock matrix from seismic refraction
-and electrical resistivity data. Existing approaches rely on conventional
-inversions of both data sets and a suitable a-priori estimate of the porosity
-distribution to transform velocity and resistivity models into estimates for the
-four-phase system, often leading to non-physical results. Based on two synthetic
-experiments and a field data set from an Alpine permafrost site (Schilthorn,
-Bernese Alps, Switzerland), it is demonstrated that the developed petrophysical
-joint inversion provides physically plausible solutions, even in the absence of
-prior porosity estimates. An assessment of the model covariance matrix for the
-coupled inverse problem reveals remaining petrophysical ambiguities, in
-particular between ice and rock matrix. Incorporation of petrophysical a-priori
-information is demonstrated by penalizing ice occurrence within the first two
-meters of the subsurface where the measured borehole temperatures are positive.
-Joint inversion of the field data set reveals a shallow air-rich layer with high
-porosity on top of a lower-porosity subsurface with laterally varying ice and
-liquid water contents. Non-physical values (e.g., negative saturations) do not
-occur and estimated ice saturations of 0-50% as well as liquid water saturations
-of 15-75% are in agreement with the relatively warm borehole temperatures
-between -0.5 °C and 3 °C. The presented method helps to improve quantification
-of water, ice, and air from geophysical observations.
+The repository is organized into several branches, each representing a different stage or variant of the PJI framework. Below is a description of the main branches and their associated research contexts:
+
+- **`wagner2019`**  
+  This branch contains the implementation published by Wagner et al. (2019), which uses Archie's law to model the electrical response. It represents the original PJI formulation and is based on a four-phase petrophysical model of unfrozen water, ice, air, and solid matrix.  
+  Repository: [four-phase-inversion by Florian Wagner](https://github.com/florian-wagner/four-phase-inversion)
+
+- **`dev`**  
+  This branch corresponds to the implementation presented in Steiner et al. (2022), which extends the framework by incorporating the Waxman–Smits (1968) conduction model. This formulation includes **surface conductivity effects** via exchangeable cations and uses **dual-frequency electrical resistivity data** to better constrain these processes. It introduces a frequency-dependent treatment of conductivity, addressing challenges in interpreting electrical responses in clay-rich or saline environments.
+
+- **`dev-estm`**  
+  This experimental branch implements a method proposed in Steiner's PhD thesis (2023), where the **cementation exponent \( m \)** in Archie's law is not treated as fixed but is instead **estimated as part of the inversion**. This allows site-specific calibration and adapts the model to variations in pore structure or saturation history, potentially improving model realism in heterogeneous environments.
+
+- **`dev-tempdep`**  
+  Focuses on **temperature-dependent electrical conductivity**. This implementation accounts for the influence of temperature on both bulk and surface conduction, which is especially relevant for permafrost or seasonal thaw environments. While it does not estimate the cementation exponent, it introduces temperature-corrected conductivity models that adjust dynamically during the inversion.
+
+- **`dev-estcec`**  
+  This branch combines **temperature modeling** with an advanced inversion strategy that directly estimates the **cation exchange capacity (CEC)** from the data. Unlike previous approaches that updated CEC externally, here it is included in the parameter vector, allowing full coupling with other state variables and improving inversion consistency for systems with significant surface conduction (e.g., fine-grained sediments, weathered profiles).
 
 
 ## Structure of this repository
