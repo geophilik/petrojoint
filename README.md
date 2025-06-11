@@ -2,6 +2,7 @@
 This repository contains a collection of inversion frameworks developed to estimate hydrogeological subsurface properties by jointly inverting seismic refraction and electrical resistivity data. The core concept is based on **petrophysical joint inversion (PJI)**, where geophysical responses are linked through petrophysical laws to shared state variables such as porosity, saturation, temperature, and others.
 
 The framework was originally developed for applications in **partially frozen porous media**, but the modifications available in this repository make it broadly applicable to various environments where seismic and electrical properties are coupled through pore-scale physics.
+
 ---
 
 [![License](https://img.shields.io/badge/license-BSD-green)](LICENSE.md)
