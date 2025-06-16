@@ -16,10 +16,9 @@ help:
 	@echo "  all        runs 'build'"
 	@echo "  build      build and install the package"
 	@echo "  clean      clean up the package build"
-	@echo "  results    execute all of the results"
 	@echo ""
 
-all: build results
+all: build
 
 clean:
 	find . -name "*.pyc" -exec rm -v {} \;
@@ -28,7 +27,3 @@ clean:
 build:
 	unset PYTHONPATH # to avoid conflicts with local pygimli installations
 	python setup.py install
-
-#results:
-#	make -C scripts/field_case all
-#	make -C scripts/synthetic_case all
