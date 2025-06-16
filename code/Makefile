@@ -16,10 +16,9 @@ help:
 	@echo "  all        runs 'build'"
 	@echo "  build      build and install the package"
 	@echo "  clean      clean up the package build"
-	@echo "  results    execute all of the results"
 	@echo ""
 
-all: build results
+all: build
 
 clean:
 	find . -name "*.pyc" -exec rm -v {} \;
