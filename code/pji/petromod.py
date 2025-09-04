@@ -7,7 +7,8 @@ import pygimli as pg
 class PetroMod():
 
     def __init__(self, vw=1500., va=330., vr=5500, vi=3750,
-                 n=2., m=2.,
+                 n=2., nh=1.
+                 m=2.,
                  phi=0.4,
                  rhow=150., rhow_T0=21,
                  rhog=2650, 
@@ -60,6 +61,7 @@ class PetroMod():
         # Archie parameter
         self.m = m
         self.n = n
+        self.nh = nh
         self.phi = phi
         self.fr = 1 - self.phi  # fraction of rock
         
@@ -133,7 +135,7 @@ class PetroMod():
         
         # ~ cec = self.phi**-np.abs(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
         # ~ cec = self.phi**(self.n - self.m) * mn / (self.water(rholo, rhohi)**(self.n-1) * self.rhog * self.l)
-        cec = (self.water(rholo, rhohi)/(self.phi))**(1-self.n)*self.phi**(1-self.m)*mn/(self.rhog * self.l)
+        cec = (self.water(rholo, rhohi)/(self.phi))**(-self.nh)*self.phi**(1-self.m)*mn/(self.rhog * self.l)
         
         # ~ cec = (self.water(rholo, rhohi)/self.phi)**(1-self.n)*self.phi**(1-self.m)*(mn/(self.rhog*self.l))
         # ~ cec = mn / (self.water(rholo, rhohi)**(self.m-1) * self.rhog * self.l)
@@ -203,7 +205,7 @@ class PetroMod():
         # ~ print("B", self.B)
         
         ret = (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
-               (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * self.B * cec
+               (fw / phi)**(self.nh) * phi**(self.m-1) * self.rhog * self.B * cec
                
         # ~ print(ret.shape)
         
@@ -227,7 +229,7 @@ class PetroMod():
         else:
             phi = 1 - fr
         
-        ret = (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * self.B * cec
+        ret = (fw / phi)**(self.nh) * phi**(self.m-1) * self.rhog * self.B * cec
                
         return ret
     
@@ -249,7 +251,7 @@ class PetroMod():
             phi = 1 - fr
 
         return (fw / phi)**self.n * phi**self.m * (1 / self.rhow) + \
-               (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
+               (fw / phi)**(self.nh) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
         # ~ return fw**self.m * (1 / self.rhow) + \
                # ~ fw**(self.m-1) * self.rhog * (self.B - self.l) * cec
         
@@ -267,11 +269,11 @@ class PetroMod():
         else:
             phi = 1 - fr
 
-        return (fw / phi)**(self.n-1) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
+        return (fw / phi)**(self.nh) * phi**(self.m-1) * self.rhog * (self.B - self.l) * cec
         
     def rholo_deriv_fw(self, fw, fi, fa, cec, fr):
         return ((-1 / fw) * (self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhow) + \
-            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec)) / \
+            (self.nh) * (fw / (1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec)) / \
             self.sigmalo(fw, fi, fa, cec, fr)**2
     
     # ~ def rholo_deriv_fw(self, fw, fi, fa, cec, fr):
@@ -280,7 +282,7 @@ class PetroMod():
     
     def rhohi_deriv_fw(self, fw, fi, fa, cec, fr):
         return ((-1 / fw) * (self.n * (fw / (1-fr))**self.n * (1-fr)**self.m * (1/self.rhow) + \
-            (self.n-1) * (fw / (1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec)) / \
+            (self.nh) * (fw / (1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * self.B * cec)) / \
             self.sigmahi(fw, fi, fa, cec, fr)**2
     
     # ~ def rhohi_deriv_fw(self, fw, fi, fa, cec, fr):
@@ -291,8 +293,8 @@ class PetroMod():
         # ~ return 0
         
     def rholo_deriv_fr(self, fw, fi, fa, cec, fr):
-        return ((-1/(1-fr)) * ((1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec + \
-            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec - \
+        return ((-1/(1-fr)) * ((1-self.m) * (fw/(1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec + \
+            (self.nh)*(fw/(1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * (self.B - self.l) * cec - \
             self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) + \
             self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
             self.sigmalo(fw, fi, fa, cec, fr)**2
@@ -301,8 +303,8 @@ class PetroMod():
         # ~ return 0
         
     def rhohi_deriv_fr(self, fw, fi, fa, cec, fr):
-        return ((-1/(1-fr)) * (+(1-self.m) * (fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec + \
-            (self.n-1)*(fw/(1-fr))**(self.n-1) * (1-fr)**(self.m-1) * self.rhog * self.B * cec - \
+        return ((-1/(1-fr)) * (+(1-self.m) * (fw/(1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * self.B * cec + \
+            (self.nh)*(fw/(1-fr))**(self.nh) * (1-fr)**(self.m-1) * self.rhog * self.B * cec - \
             self.m * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) + \
             self.n * (fw/(1-fr))**self.n * (1-fr)**self.m * (1/self.rhow)) / \
             self.sigmahi(fw, fi, fa, cec, fr)**2
@@ -326,11 +328,11 @@ class PetroMod():
         return 0
 
     def rholo_deriv_cec(self, fw, fi, fa, cec, fr):
-        return -(fw/(1-fr))**(self.n-1)*(1-fr)**(self.m-1)*self.rhog*(self.B-self.l) / \
+        return -(fw/(1-fr))**(self.nh)*(1-fr)**(self.m-1)*self.rhog*(self.B-self.l) / \
             self.sigmalo(fw, fi, fa, cec, fr)**2
 
     def rhohi_deriv_cec(self, fw, fi, fa, cec, fr):
-        return -(fw/(1-fr))**(self.n-1)*(1-fr)**(self.m-1)*self.rhog*self.B / \
+        return -(fw/(1-fr))**(self.nh)*(1-fr)**(self.m-1)*self.rhog*self.B / \
             self.sigmahi(fw, fi, fa, cec, fr)**2
         
     def slowness(self, fw, fi, fa, fr=None):
