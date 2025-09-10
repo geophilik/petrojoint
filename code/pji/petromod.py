@@ -7,7 +7,7 @@ import pygimli as pg
 class PetroMod():
 
     def __init__(self, vw=1500., va=330., vr=5500, vi=3750,
-                 n=2., nh=1.
+                 n=2., nh=1.,
                  m=2.,
                  phi=0.4,
                  rhow=150., rhow_T0=21,
