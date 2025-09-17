@@ -203,7 +203,11 @@ class JointMod(pg.ModellingBase):
             self.fix_val_matrices[name] = pg.matrix.DiagonalMatrix(vec)
             self._G.addMatrix(self.fix_val_matrices[name],
                               self._G.rows(), self.cellCount * i)
-
+        
+        # Soil freezing curve (SFC) constraint
+        fw, fi, fa, fr, cec = self.fractions(model)
+        fwsfc = self.pm.sfc(
+        
     def showModel(self, model):
         # ~ fw, fa, cec, fr = self.fractions(model)
         fw, fi, fa, fr, t, cec = self.fractions(model)

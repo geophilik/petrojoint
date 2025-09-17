@@ -96,6 +96,44 @@ class PetroMod():
               (rho * self.phi**self.m))**(1. / self.n)
         fw[np.isclose(fw, 0)] = 0
         return fw
+    
+    def sfc(self, fr, cec):
+        d = 0.28e-9 # Water molecule diameter [m]
+        Qs = .9 # Surface charge density [C/m^2]
+        
+        phi = 1 - fr
+        
+        # Compute Qv
+        Qv = self.rhog * (fr/phi)*cec
+        
+        # Compute residual water content
+        k_qv = (2*d)/Qs
+        fwr_tmp = k_qv*Qv
+        mask_sat = fwr_tmp >= phi
+        fwr = np.where(mask_sat, phi, fwr_tmp)
+        
+        # Compute soil freezing curve
+        mask_frozen = self.t <= self.tf
+        fwsfc = np.empty_like(self.t, dtype=float)
+        
+        # Frozen cells
+        if np.any(mask_frozen):
+            z = (self.t[mask_frozen] - self.tf) / self.tc
+            e = np.exp(-z**2)
+            fwsfc[mask_frozen] = (phi[mask_frozen] - fw_res[mask_frozen]) * e + fw_res[mask_frozen]
+        
+        # Thawed cells
+        mask_thaw = ~mask_frozen
+        if np.any(mask_thaw):
+            fwsfc[mask_thaw] = phi[mask_thaw]
+        
+        # Partials
+        Qv_deriv_cec = self.rhog * (fr/phi)
+        Qv_deriv_fr = self.rhog * cec / phi**2
+        fwr_deriv_cec = np.where(mask_sat, 0., k_qv * Qv_deriv_cec)
+        fwr_deriv_
+        
+        return fwsfc
 
     def water(self, rholo, rhohi):
         sigmahi = 1. / rhohi
@@ -105,14 +143,6 @@ class PetroMod():
 
         fw = (self.rhow * self.phi**(self.n-self.m) * \
               (sigmahi - mn / self.R))**(1. / self.n)
-        # ~ fw = (self.rhow * self.phi**-np.abs(self.n-self.m) * \
-              # ~ (sigmahi - mn / self.R))**(1. / self.n)
-        # ~ print("<<< fw before >>>", fw.min(), fw.max())
-        # ~ fw[self.t<=self.tf] = fw[self.t<=self.tf] * np.exp(-((self.t[self.t<=self.tf]-self.tf)/self.tc)**2)
-        # ~ print("<<< fw after >>>", fw.min(), fw.max())
-              
-        # ~ fw = (self.rhow * (sigmahi - mn/self.R))**(1/self.m)
-        # ~ fw[np.isclose(fw, 0, atol=1e-2)] = 1e-2
         fw[np.isclose(fw, 0)] = 0
         return fw
         
