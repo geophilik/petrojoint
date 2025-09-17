@@ -55,14 +55,6 @@ class LSQRInversion(pg.RInversion):
         """One inversion step."""
         model = self.model()
         
-        # update cec
-        # ~ model = self.fop().updateCEC(model)
-        # ~ self.setModel(model)
-        
-        # ~ print('#' * 30)
-        # ~ print('begin of oneStep()')
-        # ~ print(model)
-        # ~ print('#' * 30)
         if len(self.response()) != len(self.data()):
             self.setResponse(self.forwardOperator().response(model))
 
@@ -71,24 +63,14 @@ class LSQRInversion(pg.RInversion):
         tD = self.transData()
         tM = self.transModel()
         nData = self.data().size()
-        #        nModel = len(model)
         self.A = pg.BlockMatrix()  # to be filled with scaled J and C matrices
         # part 1: data part
         J = self.forwardOperator().jacobian()
-        # self.dScale = 1.0 / pg.log(self.error()+1.0)
         self.dScale = 1.0 / (
             tD.deriv(self.data()) * self.error() * self.data())
         self.leftJ = tD.deriv(self.response()) * self.dScale
-        #        self.leftJ = self.dScale / tD.deriv(self.response())
-        # ~ self.rightJ = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
         self.rightJ = 1.0 / tM.deriv(model)
-        # ~ print("#" * 30)
-        # ~ print("J",J.cols(), J.rows())
-        # ~ print("leftJ",len(self.leftJ))
-        # ~ print("rightJ",len(self.rightJ))
-        # ~ print("#" * 30)
         self.JJ = pg.matrix.MultLeftRightMatrix(J, self.leftJ, self.rightJ)
-        #        self.A.addMatrix(self.JJ, 0, 0)
         self.mat1 = self.A.addMatrix(self.JJ)
         self.A.addMatrixEntry(self.mat1, 0, 0)
         # part 2: normal constraints
@@ -101,67 +83,90 @@ class LSQRInversion(pg.RInversion):
         self.mat2 = self.A.addMatrix(self.CC)
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
+        
         # % part 3: parameter constraints
-        if self.G is not None:
-            # ~ self.rightG = 1.0 / tM.deriv(model[:self.fop().cellCount * 4])
-            self.rightG = 1.0 / tM.deriv(model)
+        use_static_G = (self.G is not None)
+        use_dynamic_SFC = hasattr(self.forwardOperator(), "jacSFC") and getattr(self.forwardOperator(), "jacSFC") is not None
+        
+        if use_static_G or use_dynamic_SFC:
+            # Build combined G matrix
+            G_comb = pg.RBlockMatrix()
+            added = False
             
-            # ~ tmp = 1.0 / tM.deriv(model)
-            # ~ tmp[self.fop().cellCount*2:self.fop().cellCount*3] = 1.
-            # ~ self.rightG = tmp
-            # ~ print(self.rightG[self.fop().cellCount*2:self.fop().cellCount*3])
-            self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
+            if use_static_G:
+                gid = G_comb.addMatrix(self.G)
+                added = True
+            
+            if use_dynamic_SFC:
+                if not added:
+                    gid = G_comb.addMatrix(self.forwardOperator().jacSFC)
+                else:
+                    sid = G_comb.addMatrix(self.forwardOperator().jacSFC)
+            
+            # Build combined RHS c_comb
+            if use_static_G and use_dynamic_SFC:
+                c_comb = pg.cat(self.c, self.forwardOperator().bSFC)
+            elif use_static_G and not use_dynamic_SFC:
+                c_comb = self.c
+            else:
+                c_comb = self.forwardOperator().bSFC
+            
+            # Apply model-space right-scaling as before
+            self.rightG = 1. / tM.deriv(model)
+            self.GG = pg.matrix.MultRightMatrix(G_comb, self.rightG)
+            
+            # Add to big matrix A
             self.mat3 = self.A.addMatrix(self.GG)
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+            deltaG = (c_comb - G_comb * model) * sqrt(self.my)
+            local_deltaG = deltaG
+        else:
+            local_deltaG = None
+            
+        # ########
+        # replaced
+        # ########
+        # ~ if self.G is not None:
+            # ~ self.rightG = 1.0 / tM.deriv(model)
+            
+            # ~ self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
+            # ~ self.mat3 = self.A.addMatrix(self.GG)
+            # ~ nConst = self.C.rows()
+            # ~ self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+            
         self.A.recalcMatrixSize()
         # right-hand side vector
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
-        # ~ deltaC = -(self.CC * tM.fwd(model[:self.fop().cellCount * 4]) * sqrt(lam))
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
-        # ~ print(1. - self.localRegularization())
-        # ~ deltaC[:self.fop().cellCount * 4] = deltaC[:self.fop().cellCount * 4] * (1.0 - self.localRegularization())  # operates on DeltaM only
+
+
         rhs = pg.cat(deltaD, deltaC)
-        if self.G is not None:
-            # ~ print(self.G)
-            # ~ print(self.c)
-            # ~ deltaG = (self.c - self.G * model[:self.fop().cellCount * 4]) * sqrt(self.my)
-            deltaG = (self.c - self.G * model) * sqrt(self.my)
-            rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
+        if local_deltaG is not None:
+            rhs = pg.cat(rhs, local_deltaG)
+            
+        # ########
+        # replaced
+        # ########
+        # ~ rhs = pg.cat(deltaD, deltaC)
+        # ~ if self.G is not None:
+            # ~ deltaG = (self.c - self.G * model) * sqrt(self.my)
+            # ~ rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
         
-        print(self.A)
-        print(rhs)
         dM = lsqr(self.A, rhs)
-        # ~ dM = pg.cat(dM, np.ones(self.fop().cellCount) * model[self.fop().cellCount * 3:] * -1)
-        # ~ tau, responseLS = self.lineSearchInter(dM, model)
         tau, responseLS = self.lineSearchInter(dM)#, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
         if tau > 0.9:  # save time and take 1
             tau = 1.0
         else:
-            # ~ self.forwardOperator().response(self.model())
             self.forwardOperator().response(self.model())
 
         if tau < 0.1:  # still not working
             tau = 0.1  # try a small value
 
         self.setModel(tM.update(self.model(), dM * tau))
-        # ~ umodel = tM.update(model, dM * tau)
-        # ~ umodel = pg.cat(umodel[:self.fop().cellCount * 4], model[self.fop().cellCount * 4:])
-        
-        # update cec
-        # ~ umodel = self.fop().updateCEC(umodel)
-        
-        # set updated model
-        # ~ self.setModel(umodel)
-        # ~ self.setModel(tM.update(model, dM * tau))
-        # ~ print('#' * 30)
-        # ~ print('after update')
-        # ~ print(self.model())
-        # ~ print('#' * 30)        
-        # print("model", min(self.model()), max(self.model()))
         if tau == 1.0:
             self.setResponse(responseLS)
         else:  # compute new response
@@ -170,7 +175,6 @@ class LSQRInversion(pg.RInversion):
         self.setLambda(self.getLambda() * self.lambdaFactor())
         return True
 
-    # ~ def lineSearchInter(self, dM, model, nTau=100):
     def lineSearchInter(self, dM, nTau=100):
         """Optimizes line search parameter by linear response interpolation."""
         tD = self.transData()

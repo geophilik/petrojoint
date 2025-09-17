@@ -51,32 +51,15 @@ class JointMod(pg.ModellingBase):
         return np.reshape(model, (5, self.cellCount))
 
     def createJacobian(self, model):
-        #~ print('*' * 30)
-        #~ print('here')
-        #~ print('*' * 30)
-        # ~ fw, fa, cec, fr = self.fractions(model)
         fw, fi, fa, fr, cec = self.fractions(model)
-        
-        # ~ print(fw, fa, cec, fr)
 
         rholo = self.pm.rholo(fw, fi, fa, cec, fr)
         rhohi = self.pm.rhohi(fw, fi, fa, cec, fr)
         s = self.pm.slowness(fw, fi, fa, fr)
-        
-        # ~ print(rholo, rhohi, s)
 
         self.ERTlo.fop.createJacobian(rholo)
-        #~ print('*' * 30)
-        #~ print('ERTlo done')
-        #~ print('*' * 30)
         self.ERThi.fop.createJacobian(rhohi)
-        #~ print('*' * 30)
-        #~ print('ERThi done')
-        #~ print('*' * 30)
         self.SRT.fop.createJacobian(s)
-        #~ print('*' * 30)
-        #~ print('SRT done')
-        #~ print('*' * 30)
         
         jacERTlo = self.ERTlo.fop.jacobian()
         jacERThi = self.ERThi.fop.jacobian()
@@ -137,11 +120,58 @@ class JointMod(pg.ModellingBase):
         self.jac.addMatrix(self.jacERThiR, nData, self.cellCount * 3)
         self.jac.addMatrix(self.jacERThiCEC, nData, self.cellCount * 4)
         
-        #~ print('*' * 30)
-        #~ print('and then here')
-        #~ print('*' * 30)
-        
         self.setJacobian(self.jac)
+        
+        # ###############################
+        # Add Jacobian for SFC constraint 
+        # ###############################
+        
+        try:
+            T = np.asarray(self.pm.t)
+            if T.size == 1:
+                T = np.repeat(self.cellCount)
+        except Exception:
+            T = self.pm.t
+            
+        # Compute target SFC based water content and the
+        # corresponding partial derivatives
+        fwsfc_vec = self.pm.water_sfc(fr, cec)
+        dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
+        dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
+        
+        # Create empty RMatrix and fill only fr and cec columns
+        D_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        col_fr_start = self.cellCount * 3
+        col_cec_start = self.cellCount * 4
+        
+        for i in range(self.cellCount):
+            # Set partials in D_sfc
+            D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec
+            D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec
+        
+        # Build Wp_sfc: with 1. on water colums (first block)
+        Wp_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        for i in range(self.cellCount):
+            Wp_sfc[i, i] = 1.
+            
+        # Copy Wp_sfc entries first
+        for i in range(self.cellCount):
+            J_sfc[i, i] = 1.
+            # Substract D_sfc columns
+            J_sfc[i, col_fr_start + i] -= D_sfc[i, col_fr_start + i]
+            J_sfc[i, col_cec_start + i] -= D_sfc[i, col_cec_start + i]
+            
+        # Create RHS vector b_sfc
+        p_current = np.reshape(model, (5, self.cellCount)).reshape(5 * self.cellCount)
+        
+        # Compute Wp_sfc 
+        Wp_p = p_current[0:self.cellCount]
+        b_SFC = fwsfc_vec - Wp_p
+        
+        # Store for LSQR assembly
+        self.jacSFC = J_sfc
+        self.bSFC = pg.RVector(b_sfc.tolist())
+        self.Wp_SFC = Wp_sfc
 
     def createConstraints(self):
         # First order smoothness matrix
@@ -206,7 +236,9 @@ class JointMod(pg.ModellingBase):
         
         # Soil freezing curve (SFC) constraint
         fw, fi, fa, fr, cec = self.fractions(model)
-        fwsfc = self.pm.sfc(
+        fwsfc = self.pm.water_sfc(fr, cec)
+        
+        dfwr_
         
     def showModel(self, model):
         # ~ fw, fa, cec, fr = self.fractions(model)
