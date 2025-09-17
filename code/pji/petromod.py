@@ -87,8 +87,8 @@ class PetroMod():
         self.R = self.l/self.B
         
         # SFC related parameters
-        d = 0.28e-9 # Water molecule diameter [m]
-        Qs = .9 # Surface charge density [C/m^2]       
+        self.d = 0.28e-9 # Water molecule diameter [m]
+        self.Qs = .9 # Surface charge density [C/m^2]       
 
     def _compute_temp_dep(self, val_T0, T0):
         return val_T0*(1 + self.alpha_t * (self.t - T0))
@@ -101,29 +101,23 @@ class PetroMod():
     
     def water_sfc(self, fr, cec):
         # Helpers
-        phi = np.max(1. - fr, 1e-9)
+        phi = np.maximum(1. - fr, 1e-9)
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
         Qv = self.rhog * (fr / phi) * cec
         fwr_ast = (2. * self.d / self.Qs) * Qv
         
         # Enforce the maximum residual
-        fwr = np.min(fwr_ast, phi)
+        fwr = np.minimum(fwr_ast, phi)
         
         fwsfc = np.where(self.t <= self.tf,
                          (phi - fwr) * E + fwr,
                          phi)
-                         
-        # Partials
-        Qv_deriv_cec = self.rhog * (fr/phi)
-        Qv_deriv_fr = self.rhog * cec / phi**2
-        fwr_deriv_cec = np.where(mask_sat, 0., k_qv * Qv_deriv_cec)
-        fwr_deriv_
         
         return fwsfc
     
-    def fwsfc_deriv_fr(self, fw, fi, fa, cec, fr):
+    def fwsfc_deriv_fr(self, fr, cec):
         # Helpers
-        phi = np.max(1. - fr, 1e-9)
+        phi = np.maximum(1. - fr, 1e-9)
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
         Qv = self.rhog * (fr / phi) * cec
         fwr_ast = (2. * self.d / self.Qs) * Qv
@@ -142,9 +136,9 @@ class PetroMod():
         
         return dfwsfc_dfr
     
-    def fwsfc_deriv_cec(self, fw, fi, fa, cec, fr):
+    def fwsfc_deriv_cec(self, fr,cec):
         # Helpers
-        phi = np.max(1. - fr, 1e-9)
+        phi = np.maximum(1. - fr, 1e-9)
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
         Qv = self.rhog * (fr / phi) * cec
         fwr_ast = (2. * self.d / self.Qs) * Qv
@@ -153,6 +147,8 @@ class PetroMod():
         
         dfwr_dcec_a = (2. * self.d / self.Qs) * (self.rhog * fr / phi)
         dfwr_dcec_b = 0.
+        
+        dfwr_dcec = I_wr * dfwr_dcec_a + (1. - I_wr) * dfwr_dcec_b
         
         dfwsfc_dcec = np.where(self.t <= self.tf,
                                (1. - E) * dfwr_dcec,
