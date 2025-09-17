@@ -86,7 +86,9 @@ class PetroMod():
             self.rhow = rhow
         self.R = self.l/self.B
         
-        # ~ print("B", self.B)
+        # SFC related parameters
+        d = 0.28e-9 # Water molecule diameter [m]
+        Qs = .9 # Surface charge density [C/m^2]       
 
     def _compute_temp_dep(self, val_T0, T0):
         return val_T0*(1 + self.alpha_t * (self.t - T0))
@@ -97,36 +99,20 @@ class PetroMod():
         fw[np.isclose(fw, 0)] = 0
         return fw
     
-    def sfc(self, fr, cec):
-        d = 0.28e-9 # Water molecule diameter [m]
-        Qs = .9 # Surface charge density [C/m^2]
+    def water_sfc(self, fr, cec):
+        # Helpers
+        phi = np.max(1. - fr, 1e-9)
+        E = np.exp(-((self.t - self.tf) / self.tc)**2)
+        Qv = self.rhog * (fr / phi) * cec
+        fwr_ast = (2. * self.d / self.Qs) * Qv
         
-        phi = 1 - fr
+        # Enforce the maximum residual
+        fwr = np.min(fwr_ast, phi)
         
-        # Compute Qv
-        Qv = self.rhog * (fr/phi)*cec
-        
-        # Compute residual water content
-        k_qv = (2*d)/Qs
-        fwr_tmp = k_qv*Qv
-        mask_sat = fwr_tmp >= phi
-        fwr = np.where(mask_sat, phi, fwr_tmp)
-        
-        # Compute soil freezing curve
-        mask_frozen = self.t <= self.tf
-        fwsfc = np.empty_like(self.t, dtype=float)
-        
-        # Frozen cells
-        if np.any(mask_frozen):
-            z = (self.t[mask_frozen] - self.tf) / self.tc
-            e = np.exp(-z**2)
-            fwsfc[mask_frozen] = (phi[mask_frozen] - fw_res[mask_frozen]) * e + fw_res[mask_frozen]
-        
-        # Thawed cells
-        mask_thaw = ~mask_frozen
-        if np.any(mask_thaw):
-            fwsfc[mask_thaw] = phi[mask_thaw]
-        
+        fwsfc = np.where(self.t <= self.tf,
+                         (phi - fwr) * E + fwr,
+                         phi)
+                         
         # Partials
         Qv_deriv_cec = self.rhog * (fr/phi)
         Qv_deriv_fr = self.rhog * cec / phi**2
@@ -134,7 +120,55 @@ class PetroMod():
         fwr_deriv_
         
         return fwsfc
-
+    
+    def fwsfc_deriv_fr(self, fw, fi, fa, cec, fr):
+        # Helpers
+        phi = np.max(1. - fr, 1e-9)
+        E = np.exp(-((self.t - self.tf) / self.tc)**2)
+        Qv = self.rhog * (fr / phi) * cec
+        fwr_ast = (2. * self.d / self.Qs) * Qv
+        
+        I_wr = (fwr_ast < phi).astype(float)
+        
+        dfwr_dfr_a = (2. * self.d / self.Qs) * (self.rhog * cec / phi**2)
+        dfwr_dfr_b = -1.
+        
+        dfwr_dfr = I_wr * dfwr_dfr_a + (1. - I_wr) * dfwr_dfr_b
+        
+        # Combine chain rule
+        dfwsfc_dfr = np.where(self.t <= self.tf,
+                              -E + (1. - E) * dfwr_dfr,
+                              -1.)
+        
+        return dfwsfc_dfr
+    
+    def fwsfc_deriv_cec(self, fw, fi, fa, cec, fr):
+        # Helpers
+        phi = np.max(1. - fr, 1e-9)
+        E = np.exp(-((self.t - self.tf) / self.tc)**2)
+        Qv = self.rhog * (fr / phi) * cec
+        fwr_ast = (2. * self.d / self.Qs) * Qv
+        
+        I_wr = (fwr_ast < phi).astype(float)
+        
+        dfwr_dcec_a = (2. * self.d / self.Qs) * (self.rhog * fr / phi)
+        dfwr_dcec_b = 0.
+        
+        dfwsfc_dcec = np.where(self.t <= self.tf,
+                               (1. - E) * dfwr_dcec,
+                               0.)
+                               
+        return dfwsfc_dcec
+    
+    def fwsfc_deriv_fw(self, fw, fi, fa, cec, fr):
+        return 0.
+    
+    def fwsfc_deriv_fa(self, fw, fi, fa, cec, fr):
+        return 0.
+    
+    def fwsfc_deriv_fi(self, fw, fi, fa, cec, fr):
+        return 0.
+    
     def water(self, rholo, rhohi):
         sigmahi = 1. / rhohi
         sigmalo = 1. / rholo
