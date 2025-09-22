@@ -98,18 +98,28 @@ class LSQRInversion(pg.RInversion):
                 added = True
             
             if use_dynamic_SFC:
+                delta = getattr(self.forwardOperator(), "delta", 10.)
+                
+                # create left and right scaling vectors: scale rows by sqrt(delta), leave columns unscaled
+                rows_sfc = self.forwardOperator().jacSFC.rows()
+                cols_sfc = self.forwardOperator().jacSFC.cols()
+                left_sfc = pg.RVector(rows_sfc, float(np.sqrt(delta)))
+                right_sfc = pg.RVector(cols_sfc, 1.0)
+
+                # create a scaled version of jacSFC (row-scaled by sqrt(delta))
+                SFC_mat = pg.matrix.MultLeftRightMatrix(self.forwardOperator().jacSFC, left_sfc, right_sfc)
+
                 if not added:
-                    gid = G_comb.addMatrix(self.forwardOperator().jacSFC)
+                    gid = G_comb.addMatrix(SFC_mat)
                 else:
-                    sid = G_comb.addMatrix(self.forwardOperator().jacSFC)
+                    sid = G_comb.addMatrix(SFC_mat)
             
-            # Build combined RHS c_comb
             if use_static_G and use_dynamic_SFC:
-                c_comb = pg.cat(self.c, self.forwardOperator().bSFC)
+                c_comb = pg.cat(self.c, pg.RVector(self.forwardOperator().bSFC.size(), float(np.sqrt(delta))) * self.forwardOperator().bSFC)
             elif use_static_G and not use_dynamic_SFC:
                 c_comb = self.c
             else:
-                c_comb = self.forwardOperator().bSFC
+                c_comb = pg.RVector(self.forwardOperator().bSFC.size(), float(np.sqrt(delta))) * self.forwardOperator().bSFC
             
             # Apply model-space right-scaling as before
             self.rightG = 1. / tM.deriv(model)

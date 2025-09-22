@@ -138,16 +138,19 @@ class JointMod(pg.ModellingBase):
         fwsfc_vec = self.pm.water_sfc(fr, cec)
         dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
         dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
+        dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
         
         # Create empty RMatrix and fill only fr and cec columns
         D_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        col_fa_start = self.cellCount * 2
         col_fr_start = self.cellCount * 3
         col_cec_start = self.cellCount * 4
         
         for i in range(self.cellCount):
             # Set partials in D_sfc
-            D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec
-            D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec
+            D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec[i]
+            D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec[i]
+            D_sfc[i, col_fa_start + i] = dfwsfc_dfa_vec[i]
         
         # Build Wp_sfc: with 1. on water colums (first block)
         Wp_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
@@ -155,11 +158,13 @@ class JointMod(pg.ModellingBase):
             Wp_sfc[i, i] = 1.
             
         # Copy Wp_sfc entries first
+        J_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
         for i in range(self.cellCount):
             J_sfc[i, i] = 1.
             # Substract D_sfc columns
             J_sfc[i, col_fr_start + i] -= D_sfc[i, col_fr_start + i]
             J_sfc[i, col_cec_start + i] -= D_sfc[i, col_cec_start + i]
+            J_sfc[i, col_fa_start + i] -= D_sfc[i, col_fa_start + i]
             
         # Create RHS vector b_sfc
         p_current = np.reshape(model, (5, self.cellCount)).reshape(5 * self.cellCount)
@@ -170,7 +175,7 @@ class JointMod(pg.ModellingBase):
         
         # Store for LSQR assembly
         self.jacSFC = J_sfc
-        self.bSFC = pg.RVector(b_sfc.tolist())
+        self.bSFC = pg.RVector(b_SFC.tolist())
         self.Wp_SFC = Wp_sfc
 
     def createConstraints(self):
@@ -234,11 +239,12 @@ class JointMod(pg.ModellingBase):
             self._G.addMatrix(self.fix_val_matrices[name],
                               self._G.rows(), self.cellCount * i)
         
-        # Soil freezing curve (SFC) constraint
-        fw, fi, fa, fr, cec = self.fractions(model)
-        fwsfc = self.pm.water_sfc(fr, cec)
+        # ~ # Soil freezing curve (SFC) constraint
+        # ~ fw, fi, fa, fr, cec = self.fractions(model)
+        # ~ fwsfc = self.pm.water_sfc(fr, cec, fa)
+        # ~ dfwr_dfr = self.pm.
         
-        dfwr_
+        # ~ dfwr_
         
     def showModel(self, model):
         # ~ fw, fa, cec, fr = self.fractions(model)

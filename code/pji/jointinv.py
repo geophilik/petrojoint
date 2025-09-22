@@ -6,7 +6,7 @@ from .lsqrinversion import LSQRInversion
 class JointInv(LSQRInversion):
     def __init__(self, fop, data, error, startmodel, lam=20, beta=10000,
                  maxIter=50, fwmin=0, fimin=0, fwmax=1, fimax=1, famin=0,
-                 famax=1, frmin=0, frmax=1):
+                 famax=1, frmin=0, frmax=1, delta=10):
         LSQRInversion.__init__(self, data, fop, verbose=True, dosave=True)
         self._error = pg.RVector(error)
 
@@ -60,3 +60,5 @@ class JointInv(LSQRInversion):
         # ~ print(phiVec)
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)
+        
+        self.fop.delta = delta
