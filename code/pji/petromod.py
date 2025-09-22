@@ -99,35 +99,57 @@ class PetroMod():
         fw[np.isclose(fw, 0)] = 0
         return fw
     
-    def water_sfc(self, fr, cec):
+    # ~ def water_sfc(self, fr, cec):
+        # ~ # Helpers
+        # ~ phi = np.maximum(1. - fr, 1e-9)
+        # ~ E = np.exp(-((self.t - self.tf) / self.tc)**2)
+        # ~ Qv = self.rhog * (fr / phi) * cec
+        # ~ fwr_ast = (2. * self.d / self.Qs) * Qv
+        
+        # ~ # Enforce the maximum residual
+        # ~ fwr = np.minimum(fwr_ast, phi)
+        
+        # ~ fwsfc = np.where(self.t <= self.tf,
+                         # ~ (phi - fwr) * E + fwr,
+                         # ~ phi)
+        
+        # ~ return fwsfc
+    
+    def water_sfc(self, fr, cec, fa):
         # Helpers
         phi = np.maximum(1. - fr, 1e-9)
+        phi_eff = np.maximum(phi - fa, 1e-9)
+        
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
         Qv = self.rhog * (fr / phi) * cec
         fwr_ast = (2. * self.d / self.Qs) * Qv
         
         # Enforce the maximum residual
-        fwr = np.minimum(fwr_ast, phi)
+        fwr = np.minimum(fwr_ast, phi_eff)
         
         fwsfc = np.where(self.t <= self.tf,
-                         (phi - fwr) * E + fwr,
-                         phi)
+                         (phi_eff - fwr) * E + fwr,
+                         phi_eff)
         
         return fwsfc
     
     def fwsfc_deriv_fr(self, fr, cec):
         # Helpers
         phi = np.maximum(1. - fr, 1e-9)
+        phi_eff = np.maximum(phi - fa, 1e-9)
+        
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
-        Qv = self.rhog * (fr / phi) * cec
+        Qv = self.rhog * (fr / phi_eff) * cec
+        
         fwr_ast = (2. * self.d / self.Qs) * Qv
+        I_wr = (fwr_ast <= phi_eff).astype(float)
         
-        I_wr = (fwr_ast < phi).astype(float)
+        # ~ dfwr_dfr_a = (2. * self.d / self.Qs) * (self.rhog * cec / phi**2)
+        # ~ dfwr_dfr_b = -1.
         
-        dfwr_dfr_a = (2. * self.d / self.Qs) * (self.rhog * cec / phi**2)
-        dfwr_dfr_b = -1.
+        dfwr_ast_dfr = (2. * self.d / self.Qs) * (self.rhog * cec / (phi**2))
         
-        dfwr_dfr = I_wr * dfwr_dfr_a + (1. - I_wr) * dfwr_dfr_b
+        dfwr_dfr = I_wr * dfwr_ast_dfr + (1. - I_wr) * (-1.)
         
         # Combine chain rule
         dfwsfc_dfr = np.where(self.t <= self.tf,
@@ -139,16 +161,19 @@ class PetroMod():
     def fwsfc_deriv_cec(self, fr,cec):
         # Helpers
         phi = np.maximum(1. - fr, 1e-9)
+        phi_eff = np.maximum(phi - fa, 1e-9)
+        
         E = np.exp(-((self.t - self.tf) / self.tc)**2)
         Qv = self.rhog * (fr / phi) * cec
+        
         fwr_ast = (2. * self.d / self.Qs) * Qv
+        I_wr = (fwr_ast <= phi_eff).astype(float)
         
-        I_wr = (fwr_ast < phi).astype(float)
+        dfwr_ast_dcec = (2. * self.d / self.Qs) * (self.rhog * fr / phi)
+        # ~ dfwr_dcec_a = (2. * self.d / self.Qs) * (self.rhog * fr / phi)
+        # ~ dfwr_dcec_b = 0.
         
-        dfwr_dcec_a = (2. * self.d / self.Qs) * (self.rhog * fr / phi)
-        dfwr_dcec_b = 0.
-        
-        dfwr_dcec = I_wr * dfwr_dcec_a + (1. - I_wr) * dfwr_dcec_b
+        dfwr_dcec = I_wr * dfwr_ast_dcec + (1. - I_wr) * 0.
         
         dfwsfc_dcec = np.where(self.t <= self.tf,
                                (1. - E) * dfwr_dcec,
@@ -160,7 +185,20 @@ class PetroMod():
         return 0.
     
     def fwsfc_deriv_fa(self, fw, fi, fa, cec, fr):
-        return 0.
+        phi = np.maximum(1. - fr, 1e-9)
+        phi_eff = np.maximum(phi - fa, 1e-9)
+        
+        E = np.exp(-((self.t - self.tf) / self.tc)**2)
+        Qv = self.rhog * (fr / phi) * cec
+        
+        fwr_ast = (2. * self.d / self.Qs) * Qv
+        I_wr = (fwr_ast <= phi_eff).astype(float)
+        
+        dfwr_dfa = I_wr * 0. + (1. - I_wr) * (-1.)
+        
+        dfwsfc_dfa = np.where(self.t <= self.tf,
+                              -E + (1. - E) * dfwr_dfa,
+                              -1.)
     
     def fwsfc_deriv_fi(self, fw, fi, fa, cec, fr):
         return 0.
