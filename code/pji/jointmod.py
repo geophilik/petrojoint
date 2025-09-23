@@ -135,7 +135,7 @@ class JointMod(pg.ModellingBase):
             
         # Compute target SFC based water content and the
         # corresponding partial derivatives
-        fwsfc_vec = self.pm.water_sfc(fr, cec)
+        fwsfc_vec = self.pm.water_sfc(fr, cec, fa)
         dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
         dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
         dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
