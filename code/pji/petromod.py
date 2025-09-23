@@ -199,6 +199,8 @@ class PetroMod():
         dfwsfc_dfa = np.where(self.t <= self.tf,
                               -E + (1. - E) * dfwr_dfa,
                               -1.)
+                              
+        return dfwsfc_dfa
     
     def fwsfc_deriv_fi(self, fw, fi, fa, cec, fr):
         return 0.
