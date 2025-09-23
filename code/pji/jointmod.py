@@ -126,63 +126,98 @@ class JointMod(pg.ModellingBase):
         # Add Jacobian for SFC constraint 
         # ###############################
         
-        try:
-            T = np.asarray(self.pm.t)
-            if T.size == 1:
-                T = np.repeat(self.cellCount)
-        except Exception:
-            T = self.pm.t
-            
-        # Compute target SFC based water content and the
-        # corresponding partial derivatives
-        fwsfc_vec = self.pm.water_sfc(fr, cec, fa)
-        dfwsfc_dfw_vec = self.pm.fwsfc_deriv_fw(fw, fi, fa, cec, fr)
-        dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
-        dfwsfc_dfi_vec = self.pm.fwsfc_deriv_fi(fw, fi, fa, cec, fr)
-        dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
+        # Target SFC water content and partial derivatives
+        fwsfc_vec       = self.pm.water_sfc(fr, cec, fa)
+        dfwsfc_dfw_vec  = self.pm.fwsfc_deriv_fw(fw, fi, fa, cec, fr)
+        dfwsfc_dfi_vec  = self.pm.fwsfc_deriv_fi(fw, fi, fa, cec, fr)
+        dfwsfc_dfa_vec  = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
+        dfwsfc_dfr_vec  = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
         dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
-        
-        # Create empty RMatrix and fill only fr and cec columns
-        D_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
-        col_fw_start = 0
-        col_fi_start = self.cellCount
-        col_fa_start = self.cellCount * 2
-        col_fr_start = self.cellCount * 3
-        col_cec_start = self.cellCount * 4
-        
-        for i in range(self.cellCount):
-            # Set partials in D_sfc
-            D_sfc[i, col_fw_start + i] = dfwsfc_dfw_vec[i]
-            D_sfc[i, col_fi_start + i] = dfwsfc_dfi_vec[i]
-            D_sfc[i, col_fa_start + i] = dfwsfc_dfa_vec[i]
-            D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec[i]
-            D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec[i]
-        
-        # Build Wp_sfc: with 1. on water colums (first block)
-        Wp_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
-        for i in range(self.cellCount):
-            Wp_sfc[i, i] = 1.
-            
-        # Copy Wp_sfc entries first
-        J_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
-        for i in range(self.cellCount):
-            J_sfc[i, i] = 1.
-            # Substract D_sfc columns
-            J_sfc[i, col_fr_start + i] -= D_sfc[i, col_fr_start + i]
-            J_sfc[i, col_cec_start + i] -= D_sfc[i, col_cec_start + i]
-            J_sfc[i, col_fa_start + i] -= D_sfc[i, col_fa_start + i]
-            
-        # Create RHS vector b_sfc
-        p_current = np.reshape(model, (5, self.cellCount)).reshape(5 * self.cellCount)
-        
-        # Compute Wp_sfc 
-        Wp_p = p_current[0:self.cellCount]
-        b_SFC = fwsfc_vec - Wp_p
-        
+
+        # Identity matrix for per-cell scaling
+        I_cell = pg.IdentityMatrix(self.cellCount)
+
+        # Each sub-Jacobian (MultRightMatrix scales each column block by derivative values)
+        jacSFCW   = pg.MultRightMatrix(I_cell, r=(1.0 - dfwsfc_dfw_vec))  # water column
+        jacSFCI   = pg.MultRightMatrix(I_cell, r=(-dfwsfc_dfi_vec))       # ice column
+        jacSFCA   = pg.MultRightMatrix(I_cell, r=(-dfwsfc_dfa_vec))       # air column
+        jacSFCR   = pg.MultRightMatrix(I_cell, r=(-dfwsfc_dfr_vec))       # rock column
+        jacSFCCEC = pg.MultRightMatrix(I_cell, r=(-dfwsfc_dcec_vec))      # cec column
+
+        # Assemble into block matrix
+        J_sfc = pg.BlockMatrix()
+        nData_sfc = 0
+        J_sfc.addMatrix(jacSFCW,   nData_sfc, 0)
+        J_sfc.addMatrix(jacSFCI,   nData_sfc, self.cellCount)
+        J_sfc.addMatrix(jacSFCA,   nData_sfc, self.cellCount * 2)
+        J_sfc.addMatrix(jacSFCR,   nData_sfc, self.cellCount * 3)
+        J_sfc.addMatrix(jacSFCCEC, nData_sfc, self.cellCount * 4)
+
+        # RHS vector: f_w^SFC - f_w
+        b_SFC = fwsfc_vec - fw
+
         # Store for LSQR assembly
         self.jacSFC = J_sfc
-        self.bSFC = pg.RVector(b_SFC.tolist())
-        self.Wp_SFC = Wp_sfc
+        self.bSFC   = pg.RVector(b_SFC.tolist())
+        
+        # v01
+        # ~ try:
+            # ~ T = np.asarray(self.pm.t)
+            # ~ if T.size == 1:
+                # ~ T = np.repeat(self.cellCount)
+        # ~ except Exception:
+            # ~ T = self.pm.t
+            
+        # ~ # Compute target SFC based water content and the
+        # ~ # corresponding partial derivatives
+        # ~ fwsfc_vec = self.pm.water_sfc(fr, cec, fa)
+        # ~ dfwsfc_dfw_vec = self.pm.fwsfc_deriv_fw(fw, fi, fa, cec, fr)
+        # ~ dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
+        # ~ dfwsfc_dfi_vec = self.pm.fwsfc_deriv_fi(fw, fi, fa, cec, fr)
+        # ~ dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
+        # ~ dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
+        
+        # ~ # Create empty RMatrix and fill only fr and cec columns
+        # ~ D_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        # ~ col_fw_start = 0
+        # ~ col_fi_start = self.cellCount
+        # ~ col_fa_start = self.cellCount * 2
+        # ~ col_fr_start = self.cellCount * 3
+        # ~ col_cec_start = self.cellCount * 4
+        
+        # ~ for i in range(self.cellCount):
+            # ~ # Set partials in D_sfc
+            # ~ D_sfc[i, col_fw_start + i] = dfwsfc_dfw_vec[i]
+            # ~ D_sfc[i, col_fi_start + i] = dfwsfc_dfi_vec[i]
+            # ~ D_sfc[i, col_fa_start + i] = dfwsfc_dfa_vec[i]
+            # ~ D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec[i]
+            # ~ D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec[i]
+        
+        # ~ # Build Wp_sfc: with 1. on water colums (first block)
+        # ~ Wp_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        # ~ for i in range(self.cellCount):
+            # ~ Wp_sfc[i, i] = 1.
+            
+        # ~ # Copy Wp_sfc entries first
+        # ~ J_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        # ~ for i in range(self.cellCount):
+            # ~ J_sfc[i, i] = 1.
+            # ~ # Substract D_sfc columns
+            # ~ J_sfc[i, col_fr_start + i] -= D_sfc[i, col_fr_start + i]
+            # ~ J_sfc[i, col_cec_start + i] -= D_sfc[i, col_cec_start + i]
+            # ~ J_sfc[i, col_fa_start + i] -= D_sfc[i, col_fa_start + i]
+            
+        # ~ # Create RHS vector b_sfc
+        # ~ p_current = np.reshape(model, (5, self.cellCount)).reshape(5 * self.cellCount)
+        
+        # ~ # Compute Wp_sfc 
+        # ~ Wp_p = p_current[0:self.cellCount]
+        # ~ b_SFC = fwsfc_vec - Wp_p
+        
+        # ~ # Store for LSQR assembly
+        # ~ self.jacSFC = J_sfc
+        # ~ self.bSFC = pg.RVector(b_SFC.tolist())
+        # ~ self.Wp_SFC = Wp_sfc
 
     def createConstraints(self):
         # First order smoothness matrix
