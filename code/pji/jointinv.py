@@ -61,4 +61,4 @@ class JointInv(LSQRInversion):
         self.setParameterConstraints(fop._G, phiVec, beta)
         self.setModel(startmodel)
         
-        self.fop.delta = delta
+        self.forwardOperator().delta = delta
