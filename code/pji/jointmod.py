@@ -136,21 +136,27 @@ class JointMod(pg.ModellingBase):
         # Compute target SFC based water content and the
         # corresponding partial derivatives
         fwsfc_vec = self.pm.water_sfc(fr, cec, fa)
+        dfwsfc_dfw_vec = self.pm.fwsfc_deriv_fw(fw, fi, fa, cec, fr)
+        dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
+        dfwsfc_dfi_vec = self.pm.fwsfc_deriv_fi(fw, fi, fa, cec, fr)
         dfwsfc_dfr_vec = self.pm.fwsfc_deriv_fr(fw, fi, fa, cec, fr)
         dfwsfc_dcec_vec = self.pm.fwsfc_deriv_cec(fw, fi, fa, cec, fr)
-        dfwsfc_dfa_vec = self.pm.fwsfc_deriv_fa(fw, fi, fa, cec, fr)
         
         # Create empty RMatrix and fill only fr and cec columns
         D_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)
+        col_fw_start = 0
+        col_fi_start = self.cellCount
         col_fa_start = self.cellCount * 2
         col_fr_start = self.cellCount * 3
         col_cec_start = self.cellCount * 4
         
         for i in range(self.cellCount):
             # Set partials in D_sfc
+            D_sfc[i, col_fw_start + i] = dfwsfc_dfw_vec[i]
+            D_sfc[i, col_fi_start + i] = dfwsfc_dfi_vec[i]
+            D_sfc[i, col_fa_start + i] = dfwsfc_dfa_vec[i]
             D_sfc[i, col_fr_start + i] = dfwsfc_dfr_vec[i]
             D_sfc[i, col_cec_start + i] = dfwsfc_dcec_vec[i]
-            D_sfc[i, col_fa_start + i] = dfwsfc_dfa_vec[i]
         
         # Build Wp_sfc: with 1. on water colums (first block)
         Wp_sfc = pg.matrix.RMatrix(rows=self.cellCount, cols=self.cellCount * 5)

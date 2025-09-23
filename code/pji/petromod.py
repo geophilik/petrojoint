@@ -133,7 +133,7 @@ class PetroMod():
         
         return fwsfc
     
-    def fwsfc_deriv_fr(self, fr, cec):
+    def fwsfc_deriv_fr(self, fw, fi, fa, cec, fr):
         # Helpers
         phi = np.maximum(1. - fr, 1e-9)
         phi_eff = np.maximum(phi - fa, 1e-9)
@@ -158,7 +158,7 @@ class PetroMod():
         
         return dfwsfc_dfr
     
-    def fwsfc_deriv_cec(self, fr,cec):
+    def fwsfc_deriv_cec(self, fw, fi, fa, cec, fr):
         # Helpers
         phi = np.maximum(1. - fr, 1e-9)
         phi_eff = np.maximum(phi - fa, 1e-9)
