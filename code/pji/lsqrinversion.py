@@ -85,6 +85,10 @@ class LSQRInversion(pg.RInversion):
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         
+        print(self.A)
+        print(self.A.rows())
+        print(self.A.cols())
+        
         # % part 3: parameter constraints
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model)
@@ -93,6 +97,10 @@ class LSQRInversion(pg.RInversion):
             self.mat3 = self.A.addMatrix(self.GG)
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+ 
+        print(self.A)
+        print(self.A.rows())
+        print(self.A.cols())
  
         # ------------------------
         # 4. SFC constraint (soft constraint)
@@ -138,9 +146,11 @@ class LSQRInversion(pg.RInversion):
             rhs = pg.cat(rhs, delta_sfc)
         
         print(self.A)
-        print("model", model)
-        print("nCells", self.forwardOperator().cellCount)
-        print("rhs", rhs)
+        print(self.A.rows())
+        print(self.A.cols())
+        # ~ print("model", model)
+        # ~ print("nCells", self.forwardOperator().cellCount)
+        # ~ print("rhs", rhs)
         
         dM = lsqr(self.A, rhs)
         
