@@ -166,60 +166,6 @@ class LSQRInversion(pg.RInversion):
             deltaG = (self.c - self.G * model) * sqrt(self.my)
             rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
         
-        dM = lsqr(self.A, rhs)
-        tau, responseLS = self.lineSearchInter(dM)#, model)
-        if tau < 0.1:  # did not work out
-            tau = self.lineSearchQuad(dM, responseLS)
-        if tau > 0.9:  # save time and take 1
-            tau = 1.0
-        else:
-            self.forwardOperator().response(self.model())
-
-        if tau < 0.1:  # still not working
-            tau = 0.1  # try a small value
-
-        self.setModel(tM.update(self.model(), dM * tau))
-        if tau == 1.0:
-            self.setResponse(responseLS)
-        else:  # compute new response
-            self.setResponse(self.forwardOperator().response(self.model()))
-
-        self.setLambda(self.getLambda() * self.lambdaFactor())
-        return True  
-            # ~ # Add to big matrix A
-            # ~ self.mat3 = self.A.addMatrix(self.GG)
-            # ~ nConst = self.C.rows()
-            # ~ self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
-            # ~ deltaG = (c_comb - G_comb * model) * sqrt(self.my)
-            # ~ local_deltaG = deltaG
-        # ~ else:
-            # ~ local_deltaG = None
-            
-        if self.G is not None:
-            self.rightG = 1.0 / tM.deriv(model)
-            
-            self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
-            self.mat3 = self.A.addMatrix(self.GG)
-            nConst = self.C.rows()
-            self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
-            
-        self.A.recalcMatrixSize()
-        
-        # right-hand side vector
-        deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
-        deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
-        deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
-
-        # SFC constraint v01
-        # ~ rhs = pg.cat(deltaD, deltaC)
-        # ~ if local_deltaG is not None:
-            # ~ rhs = pg.cat(rhs, local_deltaG)
-            
-        rhs = pg.cat(deltaD, deltaC)
-        if self.G is not None:
-            deltaG = (self.c - self.G * model) * sqrt(self.my)
-            rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
-        
         # ------------------------
         # Part 4: SFC residual (soft constraint, like data misfit)
         # ------------------------
@@ -261,7 +207,83 @@ class LSQRInversion(pg.RInversion):
             self.setResponse(self.forwardOperator().response(self.model()))
 
         self.setLambda(self.getLambda() * self.lambdaFactor())
-        return True
+        return True  
+            # ~ # Add to big matrix A
+            # ~ self.mat3 = self.A.addMatrix(self.GG)
+            # ~ nConst = self.C.rows()
+            # ~ self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+            # ~ deltaG = (c_comb - G_comb * model) * sqrt(self.my)
+            # ~ local_deltaG = deltaG
+        # ~ else:
+            # ~ local_deltaG = None
+            
+        # ~ if self.G is not None:
+            # ~ self.rightG = 1.0 / tM.deriv(model)
+            
+            # ~ self.GG = pg.matrix.MultRightMatrix(self.G, self.rightG)
+            # ~ self.mat3 = self.A.addMatrix(self.GG)
+            # ~ nConst = self.C.rows()
+            # ~ self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+            
+        # ~ self.A.recalcMatrixSize()
+        
+        # ~ # right-hand side vector
+        # ~ deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
+        # ~ deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
+        # ~ deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
+
+        # SFC constraint v01
+        # ~ rhs = pg.cat(deltaD, deltaC)
+        # ~ if local_deltaG is not None:
+            # ~ rhs = pg.cat(rhs, local_deltaG)
+            
+        # ~ rhs = pg.cat(deltaD, deltaC)
+        # ~ if self.G is not None:
+            # ~ deltaG = (self.c - self.G * model) * sqrt(self.my)
+            # ~ rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
+        
+        # ~ # ------------------------
+        # ~ # Part 4: SFC residual (soft constraint, like data misfit)
+        # ~ # ------------------------
+        # ~ if hasattr(self.forwardOperator(), "pm") and hasattr(self.forwardOperator(), "cellCount"):
+            # ~ nCells = self.forwardOperator().cellCount
+            # ~ # Extract updated fractions from model vector
+            # ~ fw = model[0:nCells]
+            # ~ fi = model[nCells:2*nCells]
+            # ~ fa = model[2*nCells:3*nCells]
+            # ~ fr = model[3*nCells:4*nCells]
+            # ~ cec = model[4*nCells:5*nCells]
+
+            # ~ # Compute fw from soil freezing curve
+            # ~ fw_sfc = self.forwardOperator().pm.water_sfc(fr, cec, fa)
+            # ~ residual_sfc = fw - fw_sfc
+
+            # ~ # Weight residual
+            # ~ delta_sfc = residual_sfc * np.sqrt(getattr(self.forwardOperator(), "delta", 10.0))
+
+            # ~ # Append SFC residual to RHS
+            # ~ rhs = pg.cat(rhs, delta_sfc)
+        
+        # ~ dM = lsqr(self.A, rhs)
+        # ~ tau, responseLS = self.lineSearchInter(dM)#, model)
+        # ~ if tau < 0.1:  # did not work out
+            # ~ tau = self.lineSearchQuad(dM, responseLS)
+        # ~ if tau > 0.9:  # save time and take 1
+            # ~ tau = 1.0
+        # ~ else:
+            # ~ self.forwardOperator().response(self.model())
+
+        # ~ if tau < 0.1:  # still not working
+            # ~ tau = 0.1  # try a small value
+
+        # ~ self.setModel(tM.update(self.model(), dM * tau))
+        # ~ if tau == 1.0:
+            # ~ self.setResponse(responseLS)
+        # ~ else:  # compute new response
+            # ~ self.setResponse(self.forwardOperator().response(self.model()))
+
+        # ~ self.setLambda(self.getLambda() * self.lambdaFactor())
+        # ~ return True
 
     def lineSearchInter(self, dM, nTau=100):
         """Optimizes line search parameter by linear response interpolation."""
