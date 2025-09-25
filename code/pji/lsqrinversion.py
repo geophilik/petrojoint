@@ -146,9 +146,38 @@ class LSQRInversion(pg.RInversion):
             self.mat3 = self.A.addMatrix(self.GG)
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
+ 
+        # ------------------------
+        # 4. SFC constraint (soft constraint)
+        # ------------------------       
+        sfc_added = False
+        if hasattr(self.forwardOperator(), "pm") and hasattr(self.forwardOperator(), "cellCount"):
+            nCells = self.forwardOperator().cellCount
+            # Extract updated fractions
+            fw = model[0:nCells]
+            fi = model[nCells:2*nCells]
+            fa = model[2*nCells:3*nCells]
+            fr = model[3*nCells:4*nCells]
+            cec = model[4*nCells:5*nCells]
+
+            # Compute SFC-based water content
+            fw_sfc = self.forwardOperator().pm.water_sfc(fr, cec, fa)
+            residual_sfc = fw - fw_sfc
+            delta = getattr(self.forwardOperator(), "delta", 10.0)
+            delta_sfc = residual_sfc * np.sqrt(delta)
+
+            # Build diagonal weight matrix for SFC
+            W_sfc = pg.matrix.Identity(nCells) * np.sqrt(delta)
+            mat_sfc = self.A.addMatrix(W_sfc)
+            self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
+
+            sfc_added = True
             
         self.A.recalcMatrixSize()
-        # right-hand side vector
+        
+        # ------------------------
+        # 5. Build RHS vector
+        # ------------------------       
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
@@ -164,31 +193,13 @@ class LSQRInversion(pg.RInversion):
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
             deltaG = (self.c - self.G * model) * sqrt(self.my)
-            rhs = pg.cat(pg.cat(deltaD, deltaC), deltaG)
+            rhs = pg.cat(rhs, deltaG)
         
-        # ------------------------
-        # Part 4: SFC residual (soft constraint, like data misfit)
-        # ------------------------
-        if hasattr(self.forwardOperator(), "pm") and hasattr(self.forwardOperator(), "cellCount"):
-            nCells = self.forwardOperator().cellCount
-            # Extract updated fractions from model vector
-            fw = model[0:nCells]
-            fi = model[nCells:2*nCells]
-            fa = model[2*nCells:3*nCells]
-            fr = model[3*nCells:4*nCells]
-            cec = model[4*nCells:5*nCells]
-
-            # Compute fw from soil freezing curve
-            fw_sfc = self.forwardOperator().pm.water_sfc(fr, cec, fa)
-            residual_sfc = fw - fw_sfc
-
-            # Weight residual
-            delta_sfc = residual_sfc * np.sqrt(getattr(self.forwardOperator(), "delta", 10.0))
-
-            # Append SFC residual to RHS
+        if sfc_added:
             rhs = pg.cat(rhs, delta_sfc)
         
         dM = lsqr(self.A, rhs)
+        
         tau, responseLS = self.lineSearchInter(dM)#, model)
         if tau < 0.1:  # did not work out
             tau = self.lineSearchQuad(dM, responseLS)
