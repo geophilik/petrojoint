@@ -126,7 +126,7 @@ class LSQRInversion(pg.RInversion):
             zeros = np.zeros((nCells, 4*nCells))
             W_sfc = pg.Matrix(np.concatenate((ones, zeros), axis=1))
             mat_sfc = self.A.addMatrix(W_sfc)
-            self.A.addMatrixEntry(mat_sfc, self.A.rows(), 0, sqrt(self.delta))
+            self.A.addMatrixEntry(mat_sfc, self.A.rows(), 0, sqrt(delta))
             # ~ W_sfc = pg.IdentityMatrix(nCells) * np.sqrt(delta)
             # ~ mat_sfc = self.A.addMatrix(W_sfc)
             # ~ self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
