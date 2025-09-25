@@ -122,6 +122,11 @@ class LSQRInversion(pg.RInversion):
             delta_sfc = residual_sfc * np.sqrt(delta)
 
             # Build diagonal weight matrix for SFC
+            ones = np.ones((nCells, nCells))
+            zeros = np.zeros((nCells, 4*nCells))
+            W_sfc = pg.Matrix(np.concatenate((ones, zeros), axis=1))
+            mat_sfc = self.A.addMatrix(W_sfc)
+            self.A.addMatrixEntry(mat_sfc, self.A.rows(), 0, sqrt(self.delta))
             # ~ W_sfc = pg.IdentityMatrix(nCells) * np.sqrt(delta)
             # ~ mat_sfc = self.A.addMatrix(W_sfc)
             # ~ self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
