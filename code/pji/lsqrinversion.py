@@ -86,59 +86,6 @@ class LSQRInversion(pg.RInversion):
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         
         # % part 3: parameter constraints
-        # SFC constraint v01
-        # ~ use_static_G = (self.G is not None)
-        # ~ use_dynamic_SFC = hasattr(self.forwardOperator(), "jacSFC") and getattr(self.forwardOperator(), "jacSFC") is not None
-        
-        # ~ if use_static_G or use_dynamic_SFC:
-            # ~ # Build combined G matrix
-            # ~ G_comb = pg.RBlockMatrix()
-            # ~ added = False
-            
-            # ~ if use_static_G:
-                # ~ gid = G_comb.addMatrix(self.G)
-                # ~ added = True
-            
-            # ~ if use_dynamic_SFC:
-                # ~ delta = getattr(self.forwardOperator(), "delta", 10.)
-                
-                # ~ # create left and right scaling vectors: scale rows by sqrt(delta), leave columns unscaled
-                # ~ rows_sfc = self.forwardOperator().jacSFC.rows()
-                # ~ cols_sfc = self.forwardOperator().jacSFC.cols()
-                # ~ left_sfc = pg.RVector(rows_sfc, float(np.sqrt(delta)))
-                # ~ right_sfc = pg.RVector(cols_sfc, 1.0)
-
-                # ~ # create a scaled version of jacSFC (row-scaled by sqrt(delta))
-                # ~ SFC_mat = pg.matrix.MultLeftRightMatrix(self.forwardOperator().jacSFC, left_sfc, right_sfc)
-
-                # ~ if not added:
-                    # ~ gid = G_comb.addMatrix(SFC_mat)
-                # ~ else:
-                    # ~ sid = G_comb.addMatrix(SFC_mat)
-            
-            # ~ if use_static_G and use_dynamic_SFC:
-                # ~ c_comb = pg.cat(self.c, pg.RVector(self.forwardOperator().bSFC.size(), float(np.sqrt(delta))) * self.forwardOperator().bSFC)
-            # ~ elif use_static_G and not use_dynamic_SFC:
-                # ~ c_comb = self.c
-            # ~ else:
-                # ~ c_comb = pg.RVector(self.forwardOperator().bSFC.size(), float(np.sqrt(delta))) * self.forwardOperator().bSFC
-            
-            # ~ # Apply model-space right-scaling as before
-            # ~ self.rightG = 1. / tM.deriv(model)
-            # ~ self.GG = pg.matrix.MultRightMatrix(G_comb, self.rightG)
-            
-            # ~ # Add to big matrix A
-            # ~ self.mat3 = self.A.addMatrix(self.GG)
-            # ~ nConst = self.C.rows()
-            # ~ self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
-            # ~ deltaG = (c_comb - G_comb * model) * sqrt(self.my)
-            # ~ local_deltaG = deltaG
-        # ~ else:
-            # ~ local_deltaG = None
-            
-        # ########
-        # replaced
-        # ########
         if self.G is not None:
             self.rightG = 1.0 / tM.deriv(model)
             
@@ -167,9 +114,9 @@ class LSQRInversion(pg.RInversion):
             delta_sfc = residual_sfc * np.sqrt(delta)
 
             # Build diagonal weight matrix for SFC
-            W_sfc = pg.matrix.Identity(nCells) * np.sqrt(delta)
-            mat_sfc = self.A.addMatrix(W_sfc)
-            self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
+            # ~ W_sfc = pg.matrix.Identity(nCells) * np.sqrt(delta)
+            # ~ mat_sfc = self.A.addMatrix(W_sfc)
+            # ~ self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
 
             sfc_added = True
             
@@ -182,14 +129,6 @@ class LSQRInversion(pg.RInversion):
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
 
-        # SFC constraint v01
-        # ~ rhs = pg.cat(deltaD, deltaC)
-        # ~ if local_deltaG is not None:
-            # ~ rhs = pg.cat(rhs, local_deltaG)
-            
-        # ########
-        # replaced
-        # ########
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
             deltaG = (self.c - self.G * model) * sqrt(self.my)
@@ -197,6 +136,11 @@ class LSQRInversion(pg.RInversion):
         
         if sfc_added:
             rhs = pg.cat(rhs, delta_sfc)
+        
+        print("model", model.shape)
+        print("nCells", self.forwardOperator().cellCount)
+        print("rhs", rhs)
+        print("A", self.A)
         
         dM = lsqr(self.A, rhs)
         
