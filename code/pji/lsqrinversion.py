@@ -137,7 +137,7 @@ class LSQRInversion(pg.RInversion):
         if sfc_added:
             rhs = pg.cat(rhs, delta_sfc)
         
-        print("model", model.shape)
+        print("model", model)
         print("nCells", self.forwardOperator().cellCount)
         print("rhs", rhs)
         print("A", self.A)
