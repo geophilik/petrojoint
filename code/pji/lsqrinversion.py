@@ -143,7 +143,9 @@ class LSQRInversion(pg.RInversion):
         deltaD = (tD.fwd(self.data()) - tD.fwd(self.response())) * self.dScale
         deltaC = -(self.CC * tM.fwd(model) * sqrt(lam))
         deltaC *= 1.0 - self.localRegularization()  # operates on DeltaM only
-
+        
+        print("deltaC", deltaC)
+        
         rhs = pg.cat(deltaD, deltaC)
         if self.G is not None:
             deltaG = (self.c - self.G * model) * sqrt(self.my)
