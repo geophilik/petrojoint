@@ -120,8 +120,9 @@ class LSQRInversion(pg.RInversion):
             residual_sfc = fw - fw_sfc
             print("residual", residual_sfc)
             delta = getattr(self.forwardOperator(), "delta", 10.0)
+            print("delta", delta)
             delta_sfc = residual_sfc * np.sqrt(delta)
-
+            print("delta_sfc", delta_sfc)
             # Build diagonal weight matrix for SFC
             ones = np.ones((nCells, nCells))
             zeros = np.zeros((nCells, 4*nCells))
@@ -151,9 +152,9 @@ class LSQRInversion(pg.RInversion):
         if sfc_added:
             rhs = pg.cat(rhs, delta_sfc)
         
-        print(self.A)
-        print(self.A.rows())
-        print(self.A.cols())
+        # ~ print(self.A)
+        # ~ print(self.A.rows())
+        # ~ print(self.A.cols())
         # ~ print("model", model)
         # ~ print("nCells", self.forwardOperator().cellCount)
         # ~ print("rhs", rhs)
