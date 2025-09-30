@@ -85,9 +85,9 @@ class LSQRInversion(pg.RInversion):
         lam = self.getLambda()
         self.A.addMatrixEntry(self.mat2, nData, 0, sqrt(lam))
         
-        print(self.A)
-        print(self.A.rows())
-        print(self.A.cols())
+        # ~ print(self.A)
+        # ~ print(self.A.rows())
+        # ~ print(self.A.cols())
         
         # % part 3: parameter constraints
         if self.G is not None:
@@ -98,9 +98,9 @@ class LSQRInversion(pg.RInversion):
             nConst = self.C.rows()
             self.A.addMatrixEntry(self.mat3, nData + nConst, 0, sqrt(self.my))
  
-        print(self.A)
-        print(self.A.rows())
-        print(self.A.cols())
+        # ~ print(self.A)
+        # ~ print(self.A.rows())
+        # ~ print(self.A.cols())
  
         # ------------------------
         # 4. SFC constraint (soft constraint)
@@ -118,6 +118,7 @@ class LSQRInversion(pg.RInversion):
             # Compute SFC-based water content
             fw_sfc = self.forwardOperator().pm.water_sfc(fr, cec, fa)
             residual_sfc = fw - fw_sfc
+            print("residual", residual_sfc)
             delta = getattr(self.forwardOperator(), "delta", 10.0)
             delta_sfc = residual_sfc * np.sqrt(delta)
 
@@ -132,7 +133,7 @@ class LSQRInversion(pg.RInversion):
             # ~ self.A.addMatrixEntry(mat_sfc, self.A.size()[0], 0, 1.0)
 
             sfc_added = True
-            
+        print("sfc_added", sfc_added)
         self.A.recalcMatrixSize()
         
         # ------------------------
