@@ -38,6 +38,12 @@ The repository is organized into several branches, each representing a different
 - **`dev-estcec`**  
   This branch combines **temperature modeling** with an advanced inversion strategy that directly estimates the **cation exchange capacity (CEC)** from the data. Unlike previous approaches that updated CEC externally, here it is included in the parameter vector, allowing full coupling with other state variables and improving inversion consistency for systems with significant surface conduction (e.g., fine-grained sediments, weathered profiles).
 
+- **`dev-gji-n`**
+  This branch contains the implementation corresponding to the Geophysical Journal International (GJI) submission by Steiner et al. (2025). It introduces a generalized treatment of the saturation exponents for electrolytic and surface conduction. The formulation allows independent control and sensitivity analysis of these exponents, enabling a more flexible representation of partially frozen or variably saturated materials. The branch also includes improved handling of parameter dependencies and updated inversion configurations consistent with the synthetic experiments presented in the GJI manuscript.
+
+- **`dev-gji-n-sfccon`**
+  This branch builds upon dev-gji-n and introduces temperature-dependent coupling via a Soil Freezing Curve (SFC). The SFC establishes a direct relationship between liquid water content, temperature, and cation exchange capacity (CEC), thereby linking petrophysical and thermal processes. This implementation provides a fully coupled inversion framework that accounts for surface conduction, temperature dependence, and ice–water partitioning. It enables the inclusion of additional temperature-related data sources—such as borehole temperature profiles—into the inversion process. The dev-gji-n-sfccon branch represents the most comprehensive and physically consistent formulation to date and corresponds to the final version presented in the revised GJI manuscript.
+
 
 ## Structure of this repository
 
